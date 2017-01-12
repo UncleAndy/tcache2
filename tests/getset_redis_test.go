@@ -7,13 +7,13 @@ import (
 	"reflect"
 )
 
-func init_redis() {
+func init_test_redis() {
 	cache.ReadSettings("redis_test.yaml")
 	cache.RedisInit()
 }
 
 func TestCacheSetSimple(t *testing.T) {
-	init_redis()
+	init_test_redis()
 
 	cache.Set(0, "test_key1", "Value1")
 	cache.Set(1, "test_key2", "Value2")
@@ -49,7 +49,7 @@ func TestCacheSetSimple(t *testing.T) {
 }
 
 func TestCacheSetWithMove(t *testing.T) {
-	init_redis()
+	init_test_redis()
 
 	cache.RedisSettings.OldServers[0].Connection.Set("test_key1", "Value1", 0)
 
@@ -75,7 +75,7 @@ func TestCacheSetWithMove(t *testing.T) {
 
 
 func TestCacheGetSimple(t *testing.T) {
-	init_redis()
+	init_test_redis()
 
 	cache.Set(0, "test_key1", "Value1")
 	cache.Set(1, "test_key2", "Value2")
@@ -111,7 +111,7 @@ func TestCacheGetSimple(t *testing.T) {
 }
 
 func TestCacheGetWithMove(t *testing.T) {
-	init_redis()
+	init_test_redis()
 
 	cache.RedisSettings.OldServers[0].Connection.Set("test_key1", "Value1", 0)
 	val, err := cache.Get(2, "test_key1")
@@ -142,7 +142,7 @@ func TestCacheGetWithMove(t *testing.T) {
 }
 
 func TestRPushSimple(t *testing.T) {
-	init_redis()
+	init_test_redis()
 
 	cache.RPush(0, "arr_test_key1", "Value1")
 	cache.RPush(0, "arr_test_key1", "Value2")
@@ -184,7 +184,7 @@ func TestRPushSimple(t *testing.T) {
 }
 
 func TestRPushWithMove(t *testing.T) {
-	init_redis()
+	init_test_redis()
 
 	cache.RedisSettings.OldServers[0].Connection.RPush("arr_test_key1", "Value1")
 	cache.RedisSettings.OldServers[0].Connection.RPush("arr_test_key1", "Value2")
@@ -214,7 +214,7 @@ func TestRPushWithMove(t *testing.T) {
 }
 
 func TestLPopSimple(t *testing.T) {
-	init_redis()
+	init_test_redis()
 
 	cache.RedisSettings.MainServers[2].Connection.RPush("arr_test_key1", "Value1")
 	cache.RedisSettings.MainServers[2].Connection.RPush("arr_test_key1", "Value2")
@@ -243,7 +243,7 @@ func TestLPopSimple(t *testing.T) {
 }
 
 func TestLPopFromOldServer(t *testing.T) {
-	init_redis()
+	init_test_redis()
 
 	cache.RedisSettings.OldServers[0].Connection.RPush("arr_test_key1", "Value1")
 	cache.RedisSettings.OldServers[0].Connection.RPush("arr_test_key1", "Value2")
@@ -273,7 +273,7 @@ func TestLPopFromOldServer(t *testing.T) {
 }
 
 func TestLRangeSimple(t *testing.T) {
-	init_redis()
+	init_test_redis()
 
 	cache.RedisSettings.MainServers[0].Connection.RPush("arr_test_key1", "Value1")
 	cache.RedisSettings.MainServers[0].Connection.RPush("arr_test_key1", "Value2")
@@ -296,7 +296,7 @@ func TestLRangeSimple(t *testing.T) {
 }
 
 func TestLRangeWithMove(t *testing.T) {
-	init_redis()
+	init_test_redis()
 
 	cache.RedisSettings.OldServers[0].Connection.RPush("arr_test_key1", "Value1")
 	cache.RedisSettings.OldServers[0].Connection.RPush("arr_test_key1", "Value2")
