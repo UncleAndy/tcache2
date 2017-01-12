@@ -6,7 +6,7 @@ import (
 )
 
 func TestLoadRedisYaml(t *testing.T) {
-	cache.Read_settings("redis_reconfigure.yaml")
+	cache.ReadSettings("redis_reconfigure.yaml")
 
 	if len(cache.RedisSettings.MainServers) != 2 {
 		t.Error("MainServers expected 2, got ", len(cache.RedisSettings.MainServers))

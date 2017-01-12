@@ -10,7 +10,7 @@ import (
 
 var RedisSettings *types.RedisMode
 
-func Read_settings(file_name string) {
+func ReadSettings(file_name string) {
 	dat, err := ioutil.ReadFile(file_name)
 	if err != nil {
 		log.Error.Fatalln(err)
@@ -24,7 +24,7 @@ func Read_settings(file_name string) {
 	}
 }
 
-func Redis_init() {
+func RedisInit() {
 	redis_servers_connect(&RedisSettings.MainServers)
 
 	if RedisSettings.ReconfigureMode {

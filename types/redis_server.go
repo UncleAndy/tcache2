@@ -8,4 +8,5 @@ type RedisServer struct {
 	Password 	string	`yaml:"password"`
 	Priority 	float32	`yaml:"priority"`
 	Connection 	*redis.Client
+	QueueSizes	map[string]int64
 }

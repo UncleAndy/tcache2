@@ -8,8 +8,8 @@ import (
 )
 
 func init_redis() {
-	cache.Read_settings("redis_test.yaml")
-	cache.Redis_init()
+	cache.ReadSettings("redis_test.yaml")
+	cache.RedisInit()
 }
 
 func TestCacheSetSimple(t *testing.T) {
@@ -334,4 +334,5 @@ func TestLRangeWithMove(t *testing.T) {
 	}
 
 	cache.RedisSettings.OldServers[0].Connection.Del("arr_test_key1")
+	cache.RedisSettings.MainServers[2].Connection.Del("arr_test_key1")
 }
