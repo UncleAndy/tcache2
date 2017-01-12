@@ -1,0 +1,23 @@
+reconfigure_mode: true
+main_servers:
+- addr: "127.0.0.1:6379"
+  db: 0
+  password: ''
+  priority: 1.5
+- addr: "127.0.0.2:1234"
+  db: 1
+  password: 'abc'
+  priority: 2.7
+old_servers:
+- addr: "127.0.0.1:1234"
+  db: 0
+  password: ''
+  priority: 1.0
+- addr: "127.0.0.2:1234"
+  db: 0
+  password: ''
+  priority: 1.0
+- addr: "127.0.0.3:1234"
+  db: 0
+  password: ''
+  priority: 1.0

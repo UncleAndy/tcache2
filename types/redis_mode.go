@@ -5,5 +5,5 @@ type RedisMode struct {
 	MainServers		[]RedisServer	`yaml:"main_servers,flow"`
 
 	// Used only if ReconfigureMode is true
-	NewServers 		[]RedisServer	`yaml:"new_servers,flow"`
+	OldServers 		[]RedisServer	`yaml:"old_servers,flow"`
 }

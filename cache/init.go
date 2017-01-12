@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 )
 
-var redis_mode *types.RedisMode
+var RedisSettings *types.RedisMode
 
 func Read_settings(file_name string) {
 	dat, err := ioutil.ReadFile(file_name)
@@ -16,19 +16,19 @@ func Read_settings(file_name string) {
 		log.Error.Fatalln(err)
 	}
 
-	redis_mode = &types.RedisMode{}
+	RedisSettings = &types.RedisMode{}
 
-	err = yaml.Unmarshal(dat, redis_mode)
+	err = yaml.Unmarshal(dat, RedisSettings)
 	if err != nil {
 		log.Error.Fatalf("error: %v", err)
 	}
 }
 
 func Redis_init() {
-	redis_servers_connect(&redis_mode.MainServers)
+	redis_servers_connect(&RedisSettings.MainServers)
 
-	if redis_mode.ReconfigureMode {
-		redis_servers_connect(&redis_mode.NewServers)
+	if RedisSettings.ReconfigureMode {
+		redis_servers_connect(&RedisSettings.OldServers)
 	}
 }
 
@@ -47,4 +47,8 @@ func redis_servers_connect(servers *[]types.RedisServer) {
 			log.Error.Fatalln("Error connection to Redis server "+server.Addr)
 		}
 	}
+}
+
+func servers_equals(server1 types.RedisServer, server2 types.RedisServer) bool {
+	return (server1.Addr == server2.Addr && server1.Db == server2.Db)
 }
