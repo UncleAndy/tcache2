@@ -3,11 +3,11 @@ package tests
 import (
 	"testing"
 	"strings"
-	"github.com/uncleandy/tcache2/types"
+	"github.com/uncleandy/tcache2/tours"
 )
 
 func TestStringToTour(t *testing.T) {
-	tour := types.TourBase{}
+	tour := tours.TourBase{}
 
 	tour_data := []string{
 		"1",
@@ -47,7 +47,7 @@ func TestStringToTour(t *testing.T) {
 		"18",
 		"19",
 	}
-	tour_string := strings.Join(tour_data, types.TourBaseDataSeparator)
+	tour_string := strings.Join(tour_data, tours.TourBaseDataSeparator)
 
 	tour.StringToTour(tour_string)
 
