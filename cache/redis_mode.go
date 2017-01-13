@@ -1,4 +1,4 @@
-package types
+package cache
 
 type RedisMode struct {
 	ReconfigureMode 	bool		`yaml:"reconfigure_mode"`

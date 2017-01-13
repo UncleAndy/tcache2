@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"github.com/uncleandy/tcache2/types"
 	"errors"
 )
 
@@ -14,7 +13,7 @@ var (
 )
 
 // Load queue sizes for servers
-func QueueSizesUpdate(queue string, servers *[]types.RedisServer) {
+func QueueSizesUpdate(queue string, servers *[]RedisServer) {
 	updateQueueSizesCounter = MaxOperationsBeforeQueueUpdates
 	for i, server := range *servers {
 		len, err := server.Connection.LLen(queue).Result()
@@ -39,9 +38,9 @@ func CheckUpdateQueueSizes(queue string) {
 	}
 }
 
-func MinQueueServerSearchBy(queue string, servers *[]types.RedisServer) types.RedisServer {
+func MinQueueServerSearchBy(queue string, servers *[]RedisServer) RedisServer {
 	var min int64
-	var res types.RedisServer
+	var res RedisServer
 	min = -1
 	for _, server := range *servers {
 		if min == -1 || server.QueueSizes[queue] <= min {
@@ -52,19 +51,19 @@ func MinQueueServerSearchBy(queue string, servers *[]types.RedisServer) types.Re
 	return res
 }
 
-func MinQueueMainServerSearch(queue string) types.RedisServer {
+func MinQueueMainServerSearch(queue string) RedisServer {
 	CheckUpdateQueueSizes(queue)
 	return MinQueueServerSearchBy(queue, &RedisSettings.MainServers)
 }
 
-func MinQueueOldServerSearch(queue string) types.RedisServer {
+func MinQueueOldServerSearch(queue string) RedisServer {
 	CheckUpdateQueueSizes(queue)
 	return MinQueueServerSearchBy(queue, &RedisSettings.OldServers)
 }
 
-func MaxQueueServerSearchBy(queue string, servers *[]types.RedisServer) (types.RedisServer, error) {
+func MaxQueueServerSearchBy(queue string, servers *[]RedisServer) (RedisServer, error) {
 	var max int64
-	var res types.RedisServer
+	var res RedisServer
 	max = 0
 	for _, server := range *servers {
 		if server.QueueSizes[queue] > max {
@@ -79,12 +78,12 @@ func MaxQueueServerSearchBy(queue string, servers *[]types.RedisServer) (types.R
 	return res, err
 }
 
-func MaxQueueMainServerSearch(queue string) (types.RedisServer, error) {
+func MaxQueueMainServerSearch(queue string) (RedisServer, error) {
 	CheckUpdateQueueSizes(queue)
 	return MaxQueueServerSearchBy(queue, &RedisSettings.MainServers)
 }
 
-func MaxQueueOldServerSearch(queue string) (types.RedisServer, error) {
+func MaxQueueOldServerSearch(queue string) (RedisServer, error) {
 	CheckUpdateQueueSizes(queue)
 	return MaxQueueServerSearchBy(queue, &RedisSettings.OldServers)
 }
@@ -121,7 +120,7 @@ func GetQueue(queue string) (string, error) {
 	return val, err
 }
 
-func CleanQueueBy(queue string, servers *[]types.RedisServer) {
+func CleanQueueBy(queue string, servers *[]RedisServer) {
 	for _, server := range *servers {
 		server.Connection.Del(queue)
 		server.QueueSizes[queue] = 0
@@ -135,11 +134,11 @@ func CleanQueue(queue string) {
 	}
 }
 
-func inc_queue_size(queue string, server *types.RedisServer) {
+func inc_queue_size(queue string, server *RedisServer) {
 	(*server).QueueSizes[queue] += 1
 }
 
-func dec_queue_size(queue string, server *types.RedisServer) {
+func dec_queue_size(queue string, server *RedisServer) {
 	if (*server).QueueSizes[queue] <= 0 {
 		(*server).QueueSizes[queue] = 0
 	} else {

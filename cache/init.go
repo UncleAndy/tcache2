@@ -1,14 +1,13 @@
 package cache
 
 import (
-	"github.com/uncleandy/tcache2/types"
 	"gopkg.in/redis.v4"
 	"github.com/fellah/tcache/log"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 )
 
-var RedisSettings *types.RedisMode
+var RedisSettings *RedisMode
 
 func ReadSettings(file_name string) {
 	dat, err := ioutil.ReadFile(file_name)
@@ -16,7 +15,7 @@ func ReadSettings(file_name string) {
 		log.Error.Fatalln(err)
 	}
 
-	RedisSettings = &types.RedisMode{}
+	RedisSettings = &RedisMode{}
 
 	err = yaml.Unmarshal(dat, RedisSettings)
 	if err != nil {
@@ -34,7 +33,7 @@ func RedisInit() {
 	}
 }
 
-func redis_servers_connect(servers *[]types.RedisServer) {
+func redis_servers_connect(servers *[]RedisServer) {
 	for i, server := range *servers {
 		(*servers)[i].Connection = redis.NewClient(&redis.Options{
 			Addr:     	server.Addr,
@@ -51,7 +50,7 @@ func redis_servers_connect(servers *[]types.RedisServer) {
 	}
 }
 
-func redis_server_queue_sizes_init(servers *[]types.RedisServer) {
+func redis_server_queue_sizes_init(servers *[]RedisServer) {
 	for i, _ := range *servers {
 		if (*servers)[i].QueueSizes == nil {
 			(*servers)[i].QueueSizes = make(map[string]int64)
@@ -59,6 +58,6 @@ func redis_server_queue_sizes_init(servers *[]types.RedisServer) {
 	}
 }
 
-func servers_equals(server1 types.RedisServer, server2 types.RedisServer) bool {
+func servers_equals(server1 RedisServer, server2 RedisServer) bool {
 	return (server1.Addr == server2.Addr && server1.Db == server2.Db)
 }
