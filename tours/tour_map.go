@@ -17,7 +17,7 @@ type TourMap struct {
 	TourBase
 }
 
-func (t TourMap) KeyData() string {
+func (t *TourMap) KeyData() string {
 	kid1age := -1
 	if t.Kid1Age != nil {
 		kid1age = *(t.Kid1Age)
@@ -48,7 +48,7 @@ func (t TourMap) KeyData() string {
 	return strings.Join(key_data, TourMapKeyDataSeparator)
 }
 
-func (t TourMap) PriceData() string {
+func (t *TourMap) PriceData() string {
 	price_data := []string{
 		strconv.Itoa(t.Price),
 		t.CreateDate,
@@ -65,11 +65,11 @@ func (t TourMap) PriceData() string {
 	return strings.Join(price_data, TourMapKeyDataSeparator)
 }
 
-func (t TourMap) KeyDataCRC32() uint32 {
+func (t *TourMap) KeyDataCRC32() uint32 {
 	key_data := t.KeyData()
 	return crc32.ChecksumIEEE([]byte(key_data))
 }
 
-func (t TourMap) GenId() (int64, error) {
+func (t *TourMap) GenId() (int64, error) {
 	return cache.GenID(TourMapRedisGenIdKey)
 }
