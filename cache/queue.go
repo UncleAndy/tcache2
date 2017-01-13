@@ -27,7 +27,9 @@ func QueueSizesUpdate(queue string, servers *[]types.RedisServer) {
 
 func QueueSizesUpdateAll(queue string) {
 	QueueSizesUpdate(queue, &RedisSettings.MainServers)
-	QueueSizesUpdate(queue, &RedisSettings.OldServers)
+	if RedisSettings.ReconfigureMode {
+		QueueSizesUpdate(queue, &RedisSettings.OldServers)
+	}
 }
 
 func CheckUpdateQueueSizes(queue string) {
@@ -128,7 +130,9 @@ func CleanQueueBy(queue string, servers *[]types.RedisServer) {
 
 func CleanQueue(queue string) {
 	CleanQueueBy(queue, &RedisSettings.MainServers)
-	CleanQueueBy(queue, &RedisSettings.OldServers)
+	if RedisSettings.ReconfigureMode {
+		CleanQueueBy(queue, &RedisSettings.OldServers)
+	}
 }
 
 func inc_queue_size(queue string, server *types.RedisServer) {

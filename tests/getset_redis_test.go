@@ -8,6 +8,7 @@ import (
 )
 
 func init_test_redis() {
+	cache.RedisSettings = nil
 	cache.ReadSettings("redis_test.yaml")
 	cache.RedisInit()
 }
