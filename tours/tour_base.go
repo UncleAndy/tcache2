@@ -59,6 +59,11 @@ type TourBase struct {
 	FuelSurchargeMax	int
 }
 
+type TourBaseInterface interface {
+	TourToString() string
+	StringToTour(source string) error
+}
+
 type TourInterface interface {
 	TourToString() string
 	StringToTour(source string) error
@@ -69,59 +74,30 @@ type TourInterface interface {
 }
 
 func (t *TourBase) TourToString() string {
-	kid1age := -1
-	if t.Kid1Age != nil {
-		kid1age = *(t.Kid1Age)
+	tour_data := make([]string, TourBaseDataSize)
+
+	for field, position := range tourIntFieldsMap() {
+		tour_data[position] = strconv.FormatInt(
+			reflect.ValueOf(t).Elem().FieldByName(field).Int(), 10,
+		)
 	}
 
-	kid2age := -1
-	if t.Kid2Age != nil {
-		kid2age = *(t.Kid2Age)
+	for field, position := range tourStringFieldsMap() {
+		tour_data[position] = TourEscaped(
+			reflect.ValueOf(t).Elem().FieldByName(field).String(),
+			TourBaseDataSeparator, TourBaseDataSeparatorCode,
+		)
 	}
 
-	kid3age := -1
-	if t.Kid3Age != nil {
-		kid3age = *(t.Kid3Age)
+	for field, position := range tourRefIntFieldsMap() {
+		elem := reflect.ValueOf(t).Elem().FieldByName(field)
+		if elem.IsNil() {
+			tour_data[position] = "-1"
+		} else {
+			tour_data[position] = strconv.FormatInt(elem.Elem().Int(), 10)
+		}
 	}
 
-	tour_data := []string{
-		strconv.Itoa(t.HotelId),
-		t.Checkin,
-		strconv.Itoa(t.DptCityId),
-		strconv.Itoa(t.Nights),
-		strconv.Itoa(t.Adults),
-		strconv.Itoa(t.MealId),
-		strconv.Itoa(t.Kids),
-		strconv.Itoa(kid1age),
-		strconv.Itoa(kid2age),
-		strconv.Itoa(kid3age),
-		strconv.Itoa(t.SourceId),
-		t.UpdateDate,
-		strconv.Itoa(t.Price),
-		strconv.Itoa(t.CurrencyId),
-		strconv.Itoa(t.TownId),
-		t.MealName,
-		strconv.Itoa(t.TicketsIncluded),
-		strconv.Itoa(t.HasEconomTicketsDpt),
-		strconv.Itoa(t.HasEconomTicketsRtn),
-		strconv.Itoa(t.HotelIsInStop),
-		strconv.Itoa(t.RequestId),
-		strconv.FormatInt(t.OfferId, 10),
-		strconv.Itoa(t.FewEconomTicketsDpt),
-		strconv.Itoa(t.FewEconomTicketsRtn),
-		strconv.Itoa(t.FewPlacesInHotel),
-		strconv.FormatInt(t.Flags, 10),
-		TourEscaped(t.Description, TourBaseDataSeparator, TourBaseDataSeparatorCode),
-		TourEscaped(t.TourUrl, TourBaseDataSeparator, TourBaseDataSeparatorCode),
-		TourEscaped(t.RoomName, TourBaseDataSeparator, TourBaseDataSeparatorCode),
-		TourEscaped(t.ReceivingParty, TourBaseDataSeparator, TourBaseDataSeparatorCode),
-		TourEscaped(t.HtPlaceName, TourBaseDataSeparator, TourBaseDataSeparatorCode),
-		strconv.Itoa(t.PriceByr),
-		strconv.Itoa(t.PriceEur),
-		strconv.Itoa(t.PriceUsd),
-		strconv.Itoa(t.FuelSurchargeMin),
-		strconv.Itoa(t.FuelSurchargeMax),
-	}
 	return strings.Join(tour_data, TourBaseDataSeparator)
 }
 
