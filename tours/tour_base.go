@@ -60,20 +60,20 @@ type TourBase struct {
 }
 
 type TourBaseInterface interface {
-	TourToString() string
-	StringToTour(source string) error
+	ToString() string
+	FromString(source string) error
 }
 
 type TourInterface interface {
-	TourToString() string
-	StringToTour(source string) error
+	ToString() string
+	FromString(source string) error
 	KeyData() string
 	PriceData() string
 	KeyDataCRC32() uint32
 	GenId() int64
 }
 
-func (t *TourBase) TourToString() string {
+func (t *TourBase) ToString() string {
 	tour_data := make([]string, TourBaseDataSize)
 
 	for field, position := range tourIntFieldsMap() {
@@ -101,7 +101,7 @@ func (t *TourBase) TourToString() string {
 	return strings.Join(tour_data, TourBaseDataSeparator)
 }
 
-func (t *TourBase) StringToTour(source string) error {
+func (t *TourBase) FromString(source string) error {
 	tour_data := strings.Split(source, TourBaseDataSeparator)
 
 	if len(tour_data) != TourBaseDataSize {

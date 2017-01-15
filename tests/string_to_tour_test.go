@@ -49,7 +49,7 @@ func TestStringToTour(t *testing.T) {
 	}
 	tour_string := strings.Join(tour_data, tours.TourBaseDataSeparator)
 
-	tour.StringToTour(tour_string)
+	tour.FromString(tour_string)
 
 	if tour.HotelId != 1 {
 		t.Error("HotelId value error. Expected 1, got ", tour.HotelId)

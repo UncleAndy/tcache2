@@ -49,9 +49,9 @@ func TestTourToString(t *testing.T) {
 	}
 	tour_string := strings.Join(tour_data, tours.TourBaseDataSeparator)
 
-	tour.StringToTour(tour_string)
+	tour.FromString(tour_string)
 
-	tour_gen_string := tour.TourToString()
+	tour_gen_string := tour.ToString()
 
 	if tour_gen_string != tour_string {
 		t.Error("Tour string value error. Expected:\n", tour_string, "\ngot:\n", tour_gen_string)
