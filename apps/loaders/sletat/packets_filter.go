@@ -1,8 +1,9 @@
 package sletat
 
 func IsSkipPacket(packet *SletatPacket) bool {
-	// TODO: Packets filter realization
-
+	if !IsDepartCityActive(packet.DptCityId) {
+		return true
+	}
 
 	return false
 }

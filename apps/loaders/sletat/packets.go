@@ -5,9 +5,6 @@ import (
 	"github.com/uncleandy/tcache2/log"
 	"net/http"
 	"bytes"
-	"os"
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
 )
 
 const (
@@ -15,11 +12,6 @@ const (
 	bulkCacheUrl = "http://bulk.sletat.ru/BulkCacheDownload?packetId="
 	EnvLoaderFileConfig = "SLETAT_LOADER_CONFIG"
 )
-
-type SletatSettings struct {
-	Login 		string		`yaml:"login"`
-	Password 	string		`yaml:"password"`
-}
 
 type SletatPacketList struct {
 	XMLName         xml.Name `xml:"urn:SletatRu:Contracts:Bulk:Soap11Gate:v1 GetPacketList"`
@@ -59,7 +51,6 @@ type SletatRequestBody struct {
 }
 
 var (
-	sletatSettings SletatSettings
 	request = SletatRequest{
 		Header: SletatRequestHeader{
 			AuthInfo: SletatAuthInfo{
@@ -70,30 +61,6 @@ var (
 	}
 	client   = http.Client{}
 )
-
-func Init() {
-	config_file := os.Getenv(EnvLoaderFileConfig)
-	if config_file == "" {
-		log.Error.Fatalf("Redis config file name required (%s environment)", EnvLoaderFileConfig)
-	}
-	_, err := os.Stat(config_file)
-	if os.IsNotExist(err) {
-		log.Error.Fatalf("Sletat config file '%s' not exists.", config_file)
-	}
-
-	dat, err := ioutil.ReadFile(config_file)
-	if err != nil {
-		log.Error.Fatalln(err)
-	}
-
-	err = yaml.Unmarshal(dat, &sletatSettings)
-	if err != nil {
-		log.Error.Fatalf("error: %v", err)
-	}
-
-	request.Header.AuthInfo.Login = sletatSettings.Login
-	request.Header.AuthInfo.Password = sletatSettings.Password
-}
 
 func LoadPackets(t string) (chan SletatPacket) {
 	packets := make(chan SletatPacket)
