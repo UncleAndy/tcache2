@@ -5,6 +5,7 @@ import (
 	"github.com/fellah/tcache/log"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"sync"
 )
 
 var RedisSettings *RedisMode
@@ -25,10 +26,12 @@ func ReadSettings(file_name string) {
 
 func RedisInit() {
 	redis_servers_connect(&RedisSettings.MainServers)
+	queue_sizes_mutex_init(&RedisSettings.MainServers)
 	redis_server_queue_sizes_init(&RedisSettings.MainServers)
 
 	if RedisSettings.ReconfigureMode {
 		redis_servers_connect(&RedisSettings.OldServers)
+		queue_sizes_mutex_init(&RedisSettings.OldServers)
 		redis_server_queue_sizes_init(&RedisSettings.OldServers)
 	}
 }
@@ -46,6 +49,14 @@ func redis_servers_connect(servers *[]RedisServer) {
 		if err != nil {
 			(*servers)[i].Connection = nil
 			log.Error.Fatalln("Error connection to Redis server "+server.Addr)
+		}
+	}
+}
+
+func queue_sizes_mutex_init(servers *[]RedisServer) {
+	for i, _ := range *servers {
+		if (*servers)[i].QueueSizes == nil {
+			(*servers)[i].QueueSizesMutex = &sync.Mutex{}
 		}
 	}
 }

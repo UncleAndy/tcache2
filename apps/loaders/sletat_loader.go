@@ -14,7 +14,7 @@ const (
 func redisInit() {
 	redis_config_file := os.Getenv(EnvRedisFileConfig)
 	if redis_config_file == "" {
-		log.Error.Fatal("Redis config file name required (REDIS_CONFIG environment)")
+		log.Error.Fatalf("Redis config file name required (%s environment)", EnvRedisFileConfig)
 	}
 	_, err := os.Stat(redis_config_file)
 	if os.IsNotExist(err) {

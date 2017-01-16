@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	workersNum = 16
+	workersNum = 2
 )
 
 func LoadTours(packets chan SletatPacket, finish_channel chan bool) {
@@ -37,7 +37,7 @@ func LoadTours(packets chan SletatPacket, finish_channel chan bool) {
 						continue
 					}
 
-					TourToQueue(tour)
+					TourToQueue(&tour)
 				}
 				log.Info.Println("fetchTours tours loop FINISH ...")
 			}
