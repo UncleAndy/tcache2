@@ -22,11 +22,11 @@ func Init() {
 func loadSettings() {
 	config_file := os.Getenv(EnvLoaderFileConfig)
 	if config_file == "" {
-		log.Error.Fatalf("Sletat config file name required (%s environment)", EnvLoaderFileConfig)
+		log.Error.Fatalf("Sletat loader config file name required (%s environment)", EnvLoaderFileConfig)
 	}
 	_, err := os.Stat(config_file)
 	if os.IsNotExist(err) {
-		log.Error.Fatalf("Sletat config file '%s' not exists.", config_file)
+		log.Error.Fatalf("Sletat loader config file '%s' not exists.", config_file)
 	}
 
 	dat, err := ioutil.ReadFile(config_file)

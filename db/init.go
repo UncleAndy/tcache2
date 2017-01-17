@@ -108,3 +108,17 @@ func CheckConnect() {
 		}
 	}
 }
+
+func IsInListInt(list []int, id int) bool {
+	for _, goodId := range list {
+		if goodId == id {
+			return true
+		}
+	}
+
+	return false
+}
+
+func SendQuery(query string, params ...interface{}) (*sql.Rows, error) {
+	return db.Exec(query, params)
+}

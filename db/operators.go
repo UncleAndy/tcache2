@@ -28,6 +28,11 @@ func QueryOperators(where string) ([]SletatOperator, error) {
 
 	defer rows.Close()
 
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
 	operators := []SletatOperator{}
 
 	for rows.Next() {
@@ -57,11 +62,6 @@ func QueryOperators(where string) ([]SletatOperator, error) {
 		}
 
 		operators = append(operators, operator)
-	}
-
-	err = rows.Err()
-	if err != nil {
-		return nil, err
 	}
 
 	return operators, nil

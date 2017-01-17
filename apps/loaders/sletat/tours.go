@@ -13,6 +13,7 @@ import (
 
 const (
 	workersNum = 2
+	LoaderQueueToursName = "tours_download_list"
 )
 
 func LoadTours(packets chan SletatPacket, finish_channel chan bool) {
@@ -109,7 +110,7 @@ func FetchTours(packetId string) (chan tours.TourBase, error) {
 }
 
 func TourToQueue(tour *tours.TourBase) {
-	cache.AddQueue("tours_download_list", tour.ToString())
+	cache.AddQueue(LoaderQueueToursName, tour.ToString())
 }
 
 func PreProcessTour(packet SletatPacket, tour *tours.TourBase) {

@@ -104,7 +104,17 @@ func LRange(shard_index int, key string, start int64, finish int64) ([]string, e
 	return val, err
 }
 
-func GenID(key string) (int64, error) {
+func NewID(key string) (int64, error) {
 	id, err := RedisSettings.MainServers[0].Connection.Incr(key).Result()
 	return id, err
+}
+
+func GetID(key string) (int64, error) {
+	id, err := RedisSettings.MainServers[0].Connection.Get(key).Result()
+	return id, err
+}
+
+func SetID(key string, id int64) (error) {
+	err := RedisSettings.MainServers[0].Connection.Set(key, id, -1).Err()
+	return err
 }

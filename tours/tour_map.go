@@ -71,5 +71,10 @@ func (t *TourMap) KeyDataCRC32() uint32 {
 }
 
 func (t *TourMap) GenId() (int64, error) {
-	return cache.GenID(TourMapRedisGenIdKey)
+	return cache.NewID(TourMapRedisGenIdKey)
+}
+
+func (t *TourMap) PriceBiggerThen(price_data_str string) bool {
+	price_data := strings.Split(price_data_str, TourMapKeyDataSeparator)
+	return price_data[0] > 0 && t.Price > price_data[0]
 }

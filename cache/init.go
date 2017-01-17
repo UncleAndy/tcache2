@@ -2,13 +2,31 @@ package cache
 
 import (
 	"gopkg.in/redis.v4"
-	"github.com/fellah/tcache/log"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"sync"
+	"os"
+	"github.com/uncleandy/tcache2/log"
 )
 
 var RedisSettings *RedisMode
+
+const (
+	EnvRedisFileConfig = "REDIS_CONFIG"
+)
+
+func InitFromEnv() {
+	redis_config_file := os.Getenv(EnvRedisFileConfig)
+	if redis_config_file == "" {
+		log.Error.Fatalf("Redis config file name required (%s environment)", EnvRedisFileConfig)
+	}
+	_, err := os.Stat(redis_config_file)
+	if os.IsNotExist(err) {
+		log.Error.Fatalf("Redis config file '%s' not exists.", redis_config_file)
+	}
+
+	ReadSettings(redis_config_file)
+}
 
 func ReadSettings(file_name string) {
 	dat, err := ioutil.ReadFile(file_name)

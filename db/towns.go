@@ -1,23 +1,22 @@
 package db
 
 import (
-	"github.com/uncleandy/tcache2/log"
 	"fmt"
+	"github.com/uncleandy/tcache2/log"
 )
 
-func QueryDepartCitiesIds(where string) ([]int, error) {
+func QueryCitiesIds(where string) ([]int, error) {
 	CheckConnect()
 
-	sql := "SELECT sletat_depart_city_id FROM sletat_depart_cities"
+	sql := "SELECT sletat_city_id FROM sletat_cities"
 	if where != "" {
-		sql = fmt.Sprintf("SELECT sletat_depart_city_id FROM sletat_depart_cities WHERE %s", where)
+		sql = fmt.Sprintf("SELECT sletat_city_id FROM sletat_cities WHERE %s", where)
 	}
 
 	rows, err := db.Query(sql)
 	if err != nil {
 		return nil, err
 	}
-
 	defer rows.Close()
 
 	err = rows.Err()

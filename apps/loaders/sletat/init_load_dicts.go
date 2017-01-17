@@ -13,7 +13,7 @@ func PrepareData() {
 func loadDepartCities() {
 	var err error
 
-	departCitiesActiveIds, err = db.QueryDepartCities("active OR active_for_partners")
+	departCitiesActiveIds, err = db.QueryDepartCitiesIds("active OR active_for_partners")
 	if err != nil {
 		log.Error.Fatal(err)
 	}
@@ -32,7 +32,7 @@ func loadOperators() {
 }
 
 func IsDepartCityActive(id int) bool {
-	return isInListInt(departCitiesActiveIds, id)
+	return db.IsInListInt(departCitiesActiveIds, id)
 }
 
 func IsOperatorActive(id int) bool {
@@ -41,14 +41,4 @@ func IsOperatorActive(id int) bool {
 		return false
 	}
 	return operator.Active
-}
-
-func isInListInt(list []int, id int) bool {
-	for _, goodId := range list {
-		if goodId == id {
-			return true
-		}
-	}
-
-	return false
 }
