@@ -61,7 +61,7 @@ func TestTourMapMethods(t *testing.T) {
 	}
 
 	price_data := tour.PriceData()
-	price_data_expected := "20000|2017-01-02|18|19|6|7|8|9|Room &#124; name|&#124; Place name|http://site.com/tour1"
+	price_data_expected := "20000|2017-01-01|18|19|6|7|8|9|Room &#124; name|&#124; Place name|http://site.com/tour1"
 	if price_data != price_data_expected {
 		t.Error("TourMap PriceData wrong. Expected:\n", price_data_expected, "\ngot:\n", price_data)
 	}

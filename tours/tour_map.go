@@ -5,6 +5,7 @@ import (
 	"strings"
 	"hash/crc32"
 	"github.com/uncleandy/tcache2/cache"
+	"time"
 )
 
 const (
@@ -51,7 +52,7 @@ func (t *TourMap) KeyData() string {
 func (t *TourMap) PriceData() string {
 	price_data := []string{
 		strconv.Itoa(t.Price),
-		t.CreateDate,
+		t.UpdateDate,
 		strconv.Itoa(t.FuelSurchargeMin),
 		strconv.Itoa(t.FuelSurchargeMax),
 		strconv.Itoa(t.TicketsIncluded),
@@ -74,7 +75,27 @@ func (t *TourMap) GenId() (int64, error) {
 	return cache.NewID(TourMapRedisGenIdKey)
 }
 
-func (t *TourMap) PriceBiggerThen(price_data_str string) bool {
+func (t *TourMap) PriceBiggerThen(price_data_str string) (bool, error) {
 	price_data := strings.Split(price_data_str, TourMapKeyDataSeparator)
-	return price_data[0] > 0 && t.Price > price_data[0]
+	price, err := strconv.ParseInt(price_data[0], 10, 64)
+	if err != nil {
+		return true, err
+	}
+
+	return price > 0 && int64(t.Price) > price, nil
+}
+
+func (t *TourMap) UpdateDateLaterThen(price_data_str string) (bool, error) {
+	price_data := strings.Split(price_data_str, TourMapKeyDataSeparator)
+	old_update_time, err := time.Parse("2015-03-07 11:06:39", price_data[1])
+	if err != nil {
+		return false, err
+	}
+
+	new_update_time, err := time.Parse("2015-03-07 11:06:39", t.UpdateDate)
+	if err != nil {
+		return false, err
+	}
+
+	return new_update_time.After(old_update_time), nil
 }

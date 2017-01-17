@@ -2,6 +2,7 @@ package cache
 
 import (
 	"gopkg.in/redis.v4"
+	"strconv"
 )
 
 func Get(shard_index int, key string) (string, error) {
@@ -111,10 +112,19 @@ func NewID(key string) (int64, error) {
 
 func GetID(key string) (int64, error) {
 	id, err := RedisSettings.MainServers[0].Connection.Get(key).Result()
-	return id, err
+	if err != nil {
+		return 0, err
+	}
+
+	id_int, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return id_int, err
 }
 
 func SetID(key string, id int64) (error) {
-	err := RedisSettings.MainServers[0].Connection.Set(key, id, -1).Err()
+	err := RedisSettings.MainServers[0].Connection.Set(key, strconv.FormatInt(id, 10), -1).Err()
 	return err
 }

@@ -2,7 +2,6 @@ package map_tours
 
 import (
 	"github.com/uncleandy/tcache2/tours"
-	"sync"
 	"github.com/uncleandy/tcache2/cache"
 	"github.com/uncleandy/tcache2/apps/loaders/sletat"
 	"time"
@@ -117,15 +116,16 @@ func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
 			log.Error.Fatal("Error read PriceData for tour ", id_tour, ":", err)
 		}
 
-		// TODO: Compare price time first - process only price with late time
-		
-
-		if tour.PriceBiggerThen(old_price_data) {
-			// Save to price log
-			cache.RPush(id_tour, fmt.Sprintf(TourPriceLogKeyTemplate, id_tour), tour.PriceData())
+		is_bigger, err := tour.PriceBiggerThen(old_price_data)
+		if err == nil {
+			if is_bigger {
+				cache.RPush(id_tour, fmt.Sprintf(TourPriceLogKeyTemplate, id_tour), tour.PriceData())
+			} else {
+				// Save to price data
+				cache.Set(id_tour, fmt.Sprintf(TourPriceDataKeyTemplate, id_tour), tour.PriceData())
+			}
 		} else {
-			// Save to price data
-			cache.Set(id_tour, fmt.Sprintf(TourPriceDataKeyTemplate, id_tour), tour.PriceData())
+			log.Error.Fatal("Error compare prices:", err)
 		}
 	}
 }
