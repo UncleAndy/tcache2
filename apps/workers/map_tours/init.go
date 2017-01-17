@@ -28,7 +28,6 @@ func (worker *MapToursWorker) Init() {
 	worker.LoadWorkerConfig()
 
 	worker.FinishChanel = make(chan bool)
-	worker.tours = make(chan string)
 }
 
 func (worker *MapToursWorker) WaitFinish() {

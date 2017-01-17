@@ -120,5 +120,5 @@ func IsInListInt(list []int, id int) bool {
 }
 
 func SendQuery(query string, params ...interface{}) (*sql.Rows, error) {
-	return db.Exec(query, params)
+	return db.Query(query, params)
 }

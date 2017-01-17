@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-func Get(shard_index int, key string) (string, error) {
+func Get(shard_index uint64, key string) (string, error) {
 	main_server := main_shard_server(shard_index)
 	val, err := main_server.Connection.Get(key).Result()
 
@@ -24,7 +24,7 @@ func Get(shard_index int, key string) (string, error) {
 	return val, err
 }
 
-func Set(shard_index int, key string, val string) error {
+func Set(shard_index uint64, key string, val string) error {
 	main_server := main_shard_server(shard_index)
 	_, err := main_server.Connection.Set(key, val, 0).Result()
 
@@ -38,7 +38,7 @@ func Set(shard_index int, key string, val string) error {
 	return err
 }
 
-func RPush(shard_index int, key string, val string) error {
+func RPush(shard_index uint64, key string, val string) error {
 	main_server := main_shard_server(shard_index)
 	if RedisSettings.ReconfigureMode {
 		// Check exists key and if not exists - copy from old
@@ -67,7 +67,7 @@ func RPush(shard_index int, key string, val string) error {
 	return err
 }
 
-func LPop(shard_index int, key string) (string, error) {
+func LPop(shard_index uint64, key string) (string, error) {
 	main_server := main_shard_server(shard_index)
 	val, err := main_server.Connection.LPop(key).Result()
 
@@ -81,7 +81,7 @@ func LPop(shard_index int, key string) (string, error) {
 	return val, err
 }
 
-func LRange(shard_index int, key string, start int64, finish int64) ([]string, error) {
+func LRange(shard_index uint64, key string, start int64, finish int64) ([]string, error) {
 	main_server := main_shard_server(shard_index)
 	val, err := main_server.Connection.LRange(key, start, finish).Result()
 
@@ -105,18 +105,18 @@ func LRange(shard_index int, key string, start int64, finish int64) ([]string, e
 	return val, err
 }
 
-func NewID(key string) (int64, error) {
+func NewID(key string) (uint64, error) {
 	id, err := RedisSettings.MainServers[0].Connection.Incr(key).Result()
-	return id, err
+	return uint64(id), err
 }
 
-func GetID(key string) (int64, error) {
+func GetID(key string) (uint64, error) {
 	id, err := RedisSettings.MainServers[0].Connection.Get(key).Result()
 	if err != nil {
 		return 0, err
 	}
 
-	id_int, err := strconv.ParseInt(id, 10, 64)
+	id_int, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
 		return 0, err
 	}
@@ -124,7 +124,7 @@ func GetID(key string) (int64, error) {
 	return id_int, err
 }
 
-func SetID(key string, id int64) (error) {
-	err := RedisSettings.MainServers[0].Connection.Set(key, strconv.FormatInt(id, 10), -1).Err()
+func SetID(key string, id uint64) (error) {
+	err := RedisSettings.MainServers[0].Connection.Set(key, strconv.FormatUint(id, 10), -1).Err()
 	return err
 }

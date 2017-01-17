@@ -5,9 +5,9 @@ import (
 	"github.com/uncleandy/tcache2/log"
 	"github.com/uncleandy/tcache2/tours"
 	"github.com/uncleandy/tcache2/cache"
-	"strconv"
 	"gopkg.in/redis.v4"
 	"fmt"
+	"strconv"
 )
 
 const (
@@ -96,11 +96,17 @@ func (worker *MapToursWorker) LoadToursData() {
 			}
 
 			if last_id >= 0 && tour.Adults > 0 {
-				shard_crc := tour.KeyDataCRC32()
+				shard_crc := uint64(tour.KeyDataCRC32())
 
-				cache.Set(shard_crc, fmt.Sprintf(MapTourIDKeyTemplate, tour.KeyData()), last_id_str)
-				cache.Set(last_id, fmt.Sprintf(MapTourKeyDataKeyTemplate, last_id), tour.KeyData())
-				cache.Set(last_id, fmt.Sprintf(MapTourPriceDataKeyTemplate, last_id), tour.PriceData())
+				cache.Set(shard_crc,
+					fmt.Sprintf(MapTourIDKeyTemplate, tour.KeyData()),
+					strconv.FormatUint(last_id, 10))
+				cache.Set(last_id,
+					fmt.Sprintf(MapTourKeyDataKeyTemplate, last_id),
+					tour.KeyData())
+				cache.Set(last_id,
+					fmt.Sprintf(MapTourPriceDataKeyTemplate, last_id),
+					tour.PriceData())
 
 				worker.SetCurrentID(last_id)
 			}

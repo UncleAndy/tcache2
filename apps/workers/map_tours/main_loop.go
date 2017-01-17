@@ -3,11 +3,11 @@ package map_tours
 import (
 	"github.com/uncleandy/tcache2/tours"
 	"github.com/uncleandy/tcache2/cache"
-	"github.com/uncleandy/tcache2/apps/loaders/sletat"
 	"time"
 	"github.com/uncleandy/tcache2/log"
 	"fmt"
 	"gopkg.in/redis.v4"
+	"strconv"
 )
 
 const (
@@ -43,7 +43,7 @@ func (worker *MapToursWorker) SendTour(tour_str string) {
 	}
 
 	crc := tour.KeyDataCRC32()
-	thread_index := crc % worker.Settings.AllThreadsCount
+	thread_index := crc % uint64(worker.Settings.AllThreadsCount)
 	thread_queue := fmt.Sprintf(ThreadMapToursQueueTemplate, thread_index)
 
 	cache.AddQueue(thread_queue, tour_str)
@@ -74,7 +74,7 @@ func (worker *MapToursWorker) Thread(thread_index int) {
 func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
 	crc := tour.KeyDataCRC32()
 
-	id_tour, err := cache.Get(crc, fmt.Sprintf(MapTourIDKeyTemplate, tour.KeyData()))
+	id_tour_str, err := cache.Get(crc, fmt.Sprintf(MapTourIDKeyTemplate, tour.KeyData()))
 	if err != nil && err != redis.Nil {
 		log.Error.Print(
 			"Error read map tour from key ",
@@ -84,16 +84,29 @@ func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
 		)
 	}
 
+	id_tour, err := strconv.ParseUint(id_tour_str, 10, 64)
+	if err != nil {
+		log.Error.Print(
+			"Error parse map tour id from key ",
+			fmt.Sprintf(MapTourIDKeyTemplate, tour.KeyData()),
+			":",
+			err,
+		)
+	}
+
 	if err != nil {
 		// Add new tour
-		id_tour, err = tour.GenId()
+		id_tour, err := tour.GenId()
 		if err != nil {
 			log.Error.Fatal("Error GenID for tour:", err)
 		}
 
-		cache.Set(crc, fmt.Sprintf(MapTourIDKeyTemplate, tour.KeyData()), id_tour)
-		cache.Set(id_tour, fmt.Sprintf(MapTourKeyDataKeyTemplate, id_tour), tour.KeyData())
-		cache.Set(id_tour, fmt.Sprintf(MapTourPriceDataKeyTemplate, id_tour), tour.PriceData())
+		cache.Set(crc,
+			fmt.Sprintf(MapTourIDKeyTemplate, tour.KeyData()), strconv.FormatUint(id_tour, 10))
+		cache.Set(id_tour,
+			fmt.Sprintf(MapTourKeyDataKeyTemplate, id_tour), tour.KeyData())
+		cache.Set(id_tour,
+			fmt.Sprintf(MapTourPriceDataKeyTemplate, id_tour), tour.PriceData())
 	} else {
 		// Compare old price with new price
 		old_price_data, err := cache.Get(id_tour, fmt.Sprintf(MapTourPriceDataKeyTemplate, id_tour))

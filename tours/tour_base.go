@@ -69,7 +69,7 @@ type TourInterface interface {
 	FromString(source string) error
 	KeyData() string
 	PriceData() string
-	KeyDataCRC32() uint32
+	KeyDataCRC32() uint64
 	GenId() int64
 }
 

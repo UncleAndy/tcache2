@@ -66,12 +66,12 @@ func (t *TourMap) PriceData() string {
 	return strings.Join(price_data, TourMapKeyDataSeparator)
 }
 
-func (t *TourMap) KeyDataCRC32() uint32 {
+func (t *TourMap) KeyDataCRC32() uint64 {
 	key_data := t.KeyData()
-	return crc32.ChecksumIEEE([]byte(key_data))
+	return uint64(crc32.ChecksumIEEE([]byte(key_data)))
 }
 
-func (t *TourMap) GenId() (int64, error) {
+func (t *TourMap) GenId() (uint64, error) {
 	return cache.NewID(TourMapRedisGenIdKey)
 }
 

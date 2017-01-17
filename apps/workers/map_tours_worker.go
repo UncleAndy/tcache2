@@ -6,17 +6,14 @@ import (
 	"github.com/uncleandy/tcache2/db"
 	"github.com/uncleandy/tcache2/apps/workers/worker_base"
 	"github.com/uncleandy/tcache2/apps/workers/partners_tours"
-	"fmt"
 	"time"
-	"github.com/uncleandy/tcache2/tours"
 	"github.com/uncleandy/tcache2/apps/loaders/sletat"
-	"github.com/uncleandy/tcache2/log"
 )
 
-const (
+var (
 	workers = []worker_base.WorkerBaseInterface{
-		map_tours.MapToursWorker{},
-		partners_tours.PartnersToursWorker{},
+		&map_tours.MapToursWorker{},
+		&partners_tours.PartnersToursWorker{},
 	}
 )
 

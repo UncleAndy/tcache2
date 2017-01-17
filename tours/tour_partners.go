@@ -81,13 +81,13 @@ func (t *TourPartners) PriceData() string {
 	return strings.Join(price_data, TourPartnersKeyDataSeparator)
 }
 
-func (t *TourPartners) KeyDataCRC32() uint32 {
+func (t *TourPartners) KeyDataCRC32() uint64 {
 	key_data := t.KeyData()
-	return crc32.ChecksumIEEE([]byte(key_data))
+	return uint64(crc32.ChecksumIEEE([]byte(key_data)))
 }
 
 
-func (t *TourPartners) GenId() (int64, error) {
+func (t *TourPartners) GenId() (uint64, error) {
 	return cache.NewID(TourPartnersRedisGenIdKey)
 }
 
