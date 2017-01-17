@@ -26,3 +26,4 @@ _testmain.go
 .idea/
 
 apps/loaders/sletat_loader
+apps/workers/worker
