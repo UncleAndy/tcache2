@@ -76,20 +76,20 @@ type TourInterface interface {
 func (t *TourBase) ToString() string {
 	tour_data := make([]string, TourBaseDataSize)
 
-	for field, position := range tourIntFieldsMap() {
+	for field, position := range t.FieldsMapInt() {
 		tour_data[position] = strconv.FormatInt(
 			reflect.ValueOf(t).Elem().FieldByName(field).Int(), 10,
 		)
 	}
 
-	for field, position := range tourStringFieldsMap() {
+	for field, position := range t.FieldsMapString() {
 		tour_data[position] = TourEscaped(
 			reflect.ValueOf(t).Elem().FieldByName(field).String(),
 			TourBaseDataSeparator, TourBaseDataSeparatorCode,
 		)
 	}
 
-	for field, position := range tourRefIntFieldsMap() {
+	for field, position := range t.FieldsMapRefInt() {
 		elem := reflect.ValueOf(t).Elem().FieldByName(field)
 		if elem.IsNil() {
 			tour_data[position] = "-1"
@@ -111,7 +111,7 @@ func (t *TourBase) FromString(source string) error {
 		)
 	}
 
-	for field, position := range tourIntFieldsMap() {
+	for field, position := range t.FieldsMapInt() {
 		val, err := strconv.ParseInt(tour_data[position], 10, 64)
 		if err != nil {
 			return fmt.Errorf("Parse error for int '%s': '%s'", field, tour_data[position])
@@ -119,7 +119,7 @@ func (t *TourBase) FromString(source string) error {
 		reflect.ValueOf(t).Elem().FieldByName(field).SetInt(val)
 	}
 
-	for field, position := range tourStringFieldsMap() {
+	for field, position := range t.FieldsMapString() {
 		reflect.ValueOf(t).Elem().FieldByName(field).SetString(
 			TourUnEscaped(tour_data[position], TourBaseDataSeparator, TourBaseDataSeparatorCode),
 		)
@@ -138,7 +138,7 @@ func (t *TourBase) FromString(source string) error {
 		t.Kid3Age = &kidsAge
 	}
 
-	for field, position := range tourRefIntFieldsMap() {
+	for field, position := range t.FieldsMapRefInt() {
 		val, err := strconv.ParseInt(tour_data[position], 10, 64)
 		if err != nil {
 			return fmt.Errorf("Parse error for ref int '%s': '%s'", field, tour_data[position])
@@ -149,15 +149,7 @@ func (t *TourBase) FromString(source string) error {
 	return nil
 }
 
-func TourEscaped(source string, symbol string, code string) string {
-	return strings.Replace(source, symbol, code, -1)
-}
-
-func TourUnEscaped(source string, symbol string, code string) string {
-	return strings.Replace(source, code, symbol, -1)
-}
-
-func tourIntFieldsMap() map[string]int {
+func (t *TourBase) FieldsMapInt() map[string]int {
 	return map[string]int{
 		"HotelId" 	: 0,
 		"DptCityId" 	: 2,
@@ -187,7 +179,7 @@ func tourIntFieldsMap() map[string]int {
 	}
 }
 
-func tourRefIntFieldsMap() map[string]int {
+func (t *TourBase) FieldsMapRefInt() map[string]int {
 	return map[string]int{
 		"Kid1Age"	: 7,
 		"Kid2Age"	: 8,
@@ -195,7 +187,7 @@ func tourRefIntFieldsMap() map[string]int {
 	}
 }
 
-func tourStringFieldsMap() map[string]int {
+func (t *TourBase) FieldsMapString() map[string]int {
 	return map[string]int{
 		"Checkin" 	: 1,
 		"UpdateDate"	: 11,
@@ -206,4 +198,12 @@ func tourStringFieldsMap() map[string]int {
 		"ReceivingParty" : 29,
 		"HtPlaceName"	: 30,
 	}
+}
+
+func TourEscaped(source string, symbol string, code string) string {
+	return strings.Replace(source, symbol, code, -1)
+}
+
+func TourUnEscaped(source string, symbol string, code string) string {
+	return strings.Replace(source, code, symbol, -1)
 }

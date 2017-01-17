@@ -1,4 +1,4 @@
-package map_tours
+package partners_tours
 
 import (
 	"github.com/uncleandy/tcache2/tours"
@@ -11,26 +11,25 @@ import (
 )
 
 const (
-	ThreadMapToursQueueTemplate = "tours_download_list_%d"
-	MapTourIDKeyTemplate = "mtk:%s"
-	MapTourKeyDataKeyTemplate = "mtkk:%d"
-	MapTourPriceDataKeyTemplate = "mtp:%d"
-	MapTourPriceLogKeyTemplate = "mtl:%d"
+	ThreadPartnersToursQueueTemplate = "tours_download_list_%d"
+	PartnersTourIDKeyTemplate = "ptk:%s"
+	PartnersTourKeyDataKeyTemplate = "ptkk:%d"
+	PartnersTourPriceDataKeyTemplate = "ptp:%d"
 )
 
-func (worker *MapToursWorker) MainLoop() {
+func (worker *PartnersToursWorker) MainLoop() {
 	// Create threads & fill threads array of channels
 	worker.InitThreads()
 }
 
-func (worker *MapToursWorker) InitThreads() {
+func (worker *PartnersToursWorker) InitThreads() {
 	for i := 0; i < worker.Settings.WorkerThreadsCount; i++ {
 		worker.Thread(worker.Settings.WorkerFirstThreadId + i)
 	}
 }
 
-func (worker *MapToursWorker) SendTour(tour_str string) {
-	tour := tours.TourMap{}
+func (worker *PartnersToursWorker) SendTour(tour_str string) {
+	tour := tours.TourPartners{}
 
 	err := tour.FromString(tour_str)
 	if err != nil {
@@ -44,15 +43,15 @@ func (worker *MapToursWorker) SendTour(tour_str string) {
 
 	crc := tour.KeyDataCRC32()
 	thread_index := crc % worker.Settings.AllThreadsCount
-	thread_queue := fmt.Sprintf(ThreadMapToursQueueTemplate, thread_index)
+	thread_queue := fmt.Sprintf(ThreadPartnersToursQueueTemplate, thread_index)
 
 	cache.AddQueue(thread_queue, tour_str)
 }
 
-func (worker *MapToursWorker) Thread(thread_index int) {
+func (worker *PartnersToursWorker) Thread(thread_index int) {
 	go func() {
-		thread_queue := fmt.Sprintf(ThreadMapToursQueueTemplate, thread_index)
-		tour := tours.TourMap{}
+		thread_queue := fmt.Sprintf(ThreadPartnersToursQueueTemplate, thread_index)
+		tour := tours.TourPartners{}
 		for true {
 			tour_str, err := cache.GetQueue(thread_queue)
 			if err != nil || tour_str == "" {
@@ -71,14 +70,14 @@ func (worker *MapToursWorker) Thread(thread_index int) {
 	}()
 }
 
-func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
+func (worker *PartnersToursWorker) TourProcess(tour *tours.TourPartners) {
 	crc := tour.KeyDataCRC32()
 
-	id_tour, err := cache.Get(crc, fmt.Sprintf(MapTourIDKeyTemplate, tour.KeyData()))
+	id_tour, err := cache.Get(crc, fmt.Sprintf(PartnersTourIDKeyTemplate, tour.KeyData()))
 	if err != nil && err != redis.Nil {
 		log.Error.Print(
-			"Error read map tour from key ",
-			fmt.Sprintf(MapTourIDKeyTemplate, tour.KeyData()),
+			"Error read partners tour from key ",
+			fmt.Sprintf(PartnersTourIDKeyTemplate, tour.KeyData()),
 			":",
 			err,
 		)
@@ -91,23 +90,21 @@ func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
 			log.Error.Fatal("Error GenID for tour:", err)
 		}
 
-		cache.Set(crc, fmt.Sprintf(MapTourIDKeyTemplate, tour.KeyData()), id_tour)
-		cache.Set(id_tour, fmt.Sprintf(MapTourKeyDataKeyTemplate, id_tour), tour.KeyData())
-		cache.Set(id_tour, fmt.Sprintf(MapTourPriceDataKeyTemplate, id_tour), tour.PriceData())
+		cache.Set(crc, fmt.Sprintf(PartnersTourIDKeyTemplate, tour.KeyData()), id_tour)
+		cache.Set(id_tour, fmt.Sprintf(PartnersTourKeyDataKeyTemplate, id_tour), tour.KeyData())
+		cache.Set(id_tour, fmt.Sprintf(PartnersTourPriceDataKeyTemplate, id_tour), tour.PriceData())
 	} else {
 		// Compare old price with new price
-		old_price_data, err := cache.Get(id_tour, fmt.Sprintf(MapTourPriceDataKeyTemplate, id_tour))
+		old_price_data, err := cache.Get(id_tour, fmt.Sprintf(PartnersTourPriceDataKeyTemplate, id_tour))
 		if err != nil {
 			log.Error.Fatal("Error read PriceData for tour ", id_tour, ":", err)
 		}
 
 		is_bigger, err := tour.PriceBiggerThen(old_price_data)
 		if err == nil {
-			if is_bigger {
-				cache.RPush(id_tour, fmt.Sprintf(MapTourPriceLogKeyTemplate, id_tour), tour.PriceData())
-			} else {
+			if !is_bigger {
 				// Save to price data
-				cache.Set(id_tour, fmt.Sprintf(MapTourPriceDataKeyTemplate, id_tour), tour.PriceData())
+				cache.Set(id_tour, fmt.Sprintf(PartnersTourPriceDataKeyTemplate, id_tour), tour.PriceData())
 			}
 		} else {
 			log.Error.Fatal("Error compare prices:", err)
@@ -115,6 +112,6 @@ func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
 	}
 }
 
-func (worker *MapToursWorker) IsPrimary() bool {
+func (worker *PartnersToursWorker) IsPrimary() bool {
 	return worker.Settings.WorkerFirstThreadId == 0
 }
