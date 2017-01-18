@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	ThreadMapToursQueueTemplate = "tours_download_list_%d"
+	ThreadMapToursQueueTemplate = "map_tours_download_list_%d"
 	MapTourIDKeyTemplate = "mtk:%s"
 	MapTourKeyDataKeyTemplate = "mtkk:%d"
 	MapTourPriceDataKeyTemplate = "mtp:%d"
@@ -46,7 +46,10 @@ func (worker *MapToursWorker) SendTour(tour_str string) {
 	thread_index := crc % uint64(worker.Settings.AllThreadsCount)
 	thread_queue := fmt.Sprintf(ThreadMapToursQueueTemplate, thread_index)
 
-	cache.AddQueue(thread_queue, tour_str)
+	err = cache.AddQueue(thread_queue, tour_str)
+	if err != nil {
+		log.Error.Print("AddQueue error: ", err)
+	}
 }
 
 func (worker *MapToursWorker) Thread(thread_index int) {

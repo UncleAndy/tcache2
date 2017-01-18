@@ -3,8 +3,6 @@ package worker_base
 import (
 	"time"
 	"github.com/uncleandy/tcache2/cache"
-	"github.com/uncleandy/tcache2/apps/workers/partners_tours"
-	"github.com/uncleandy/tcache2/apps/workers/map_tours"
 	"github.com/uncleandy/tcache2/apps/loaders/sletat"
 )
 
@@ -14,17 +12,21 @@ type WorkerBaseInterface interface {
 	WaitFinish()
 	SendTour(string)
 	IsPrimary() bool
+	GetSettings() *WorkerSettings
+}
+
+type WorkerSettings struct {
+	WorkerFirstThreadId 	int		`yaml:"worker_first_thread_id"`
+	WorkerThreadsCount 	int		`yaml:"worker_threads_count"`
+	AllThreadsCount 	int		`yaml:"all_threads_count"`
 }
 
 var (
-	workers = []WorkerBaseInterface{
-		&map_tours.MapToursWorker{},
-		&partners_tours.PartnersToursWorker{},
-	}
+	Workers []WorkerBaseInterface
 )
 
 func RunWorkers() {
-	for _, worker := range workers {
+	for _, worker := range Workers {
 		worker.Init()
 		go worker.MainLoop()
 	}
@@ -32,13 +34,13 @@ func RunWorkers() {
 
 func RunManagerLoop() {
 	// Only one loader tours manager
-	if workers[0].IsPrimary() {
+	if Workers[0].IsPrimary() {
 		ManagerLoop()
 	}
 }
 
 func WaitWorkersFinish() {
-	for _, worker := range workers {
+	for _, worker := range Workers {
 		worker.WaitFinish()
 	}
 }
@@ -53,7 +55,7 @@ func ManagerLoop() {
 				continue
 			}
 
-			for _, worker := range workers {
+			for _, worker := range Workers {
 				worker.SendTour(tour_str)
 			}
 		}

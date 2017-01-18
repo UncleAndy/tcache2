@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	ThreadPartnersToursQueueTemplate = "tours_download_list_%d"
+	ThreadPartnersToursQueueTemplate = "partners_tours_download_list_%d"
 	PartnersTourIDKeyTemplate = "ptk:%s"
 	PartnersTourKeyDataKeyTemplate = "ptkk:%d"
 	PartnersTourPriceDataKeyTemplate = "ptp:%d"

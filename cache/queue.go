@@ -123,6 +123,12 @@ func GetQueue(queue string) (string, error) {
 	return val, err
 }
 
+func IsEmptyQueue(queue string) bool {
+	QueueSizesUpdate(queue, &RedisSettings.MainServers)
+	maxQueueServer, err := MaxQueueMainServerSearch(queue)
+	return err != nil || maxQueueServer.QueueSizes[queue] <= 0
+}
+
 func CleanQueueBy(queue string, servers *[]RedisServer) {
 	for _, server := range *servers {
 		server.Connection.Del(queue)

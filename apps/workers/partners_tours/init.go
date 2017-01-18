@@ -5,20 +5,15 @@ import (
 	"io/ioutil"
 	"gopkg.in/yaml.v2"
 	"github.com/uncleandy/tcache2/log"
+	"github.com/uncleandy/tcache2/apps/workers/worker_base"
 )
 
 const (
 	EnvWorkerFileConfig = "PARTNER_TOURS_WORKER_CONFIG"
 )
 
-type PartnersToursWorkerSettings struct {
-	WorkerFirstThreadId 	int		`yaml:"worker_first_thread_id"`
-	WorkerThreadsCount 	int		`yaml:"worker_threads_count"`
-	AllThreadsCount 	int		`yaml:"all_threads_count"`
-}
-
 type PartnersToursWorker struct {
-	Settings PartnersToursWorkerSettings
+	Settings worker_base.WorkerSettings
 	FinishChanel chan bool
 }
 
@@ -28,6 +23,10 @@ func (worker *PartnersToursWorker) Init() {
 	worker.LoadWorkerConfig()
 
 	worker.FinishChanel = make(chan bool)
+}
+
+func (worker *PartnersToursWorker) GetSettings() *worker_base.WorkerSettings {
+	return &worker.Settings
 }
 
 func (worker *PartnersToursWorker) WaitFinish() {
