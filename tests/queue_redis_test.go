@@ -379,5 +379,13 @@ func TestCleanQueue(t *testing.T) {
 		)
 	}
 
+	if !cache.IsEmptyQueue("test_queue1") {
+		t.Error("Empty queue 'test_queue1' get IsEmptyQueue method as false.")
+	}
+
+	if cache.IsEmptyQueue("test_queue2") {
+		t.Error("Filled queue 'test_queue2' get IsEmptyQueue method as true.")
+	}
+
 	cache.CleanQueue("test_queue2")
 }
