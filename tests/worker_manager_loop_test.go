@@ -155,17 +155,17 @@ func TestWorkerManagerLoop(t *testing.T) {
 	partners_tours_queue_1 := fmt.Sprintf(partners_tours.ThreadPartnersToursQueueTemplate, 1)
 	partners_tours_queue_2 := fmt.Sprintf(partners_tours.ThreadPartnersToursQueueTemplate, 0)
 
-	plen1, perr1 := cache.RedisSettings.MainServers[0].Connection.LLen(partners_tours_queue_1).Result()
-	if perr1 != nil {
-		t.Error("Error for read", partners_tours_queue_1, "queue length:", perr1)
-	} else if plen1 != 3 {
-		t.Error("Wrong lenght queue", partners_tours_queue_1, ". Expected 3, got", plen1)
+	p_len1, p_err1 := cache.RedisSettings.MainServers[0].Connection.LLen(partners_tours_queue_1).Result()
+	if p_err1 != nil {
+		t.Error("Error for read", partners_tours_queue_1, "queue length:", p_err1)
+	} else if p_len1 != 3 {
+		t.Error("Wrong lenght queue", partners_tours_queue_1, ". Expected 3, got", p_len1)
 	}
-	plen2, perr2 := cache.RedisSettings.MainServers[0].Connection.LLen(partners_tours_queue_2).Result()
-	if perr2 != nil {
-		t.Error("Error for read", partners_tours_queue_2, "queue length:", perr2)
-	} else if plen2 != 2 {
-		t.Error("Wrong lenght queue", partners_tours_queue_2, ". Expected 2, got", plen2)
+	p_len2, p_err2 := cache.RedisSettings.MainServers[0].Connection.LLen(partners_tours_queue_2).Result()
+	if p_err2 != nil {
+		t.Error("Error for read", partners_tours_queue_2, "queue length:", p_err2)
+	} else if p_len2 != 2 {
+		t.Error("Wrong lenght queue", partners_tours_queue_2, ". Expected 2, got", p_len2)
 	}
 
 
