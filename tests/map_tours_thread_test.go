@@ -242,8 +242,10 @@ func TestMapToursThreadProcessPriceLogUpdate(t *testing.T) {
 
 	tour1 := *random_tour_map()
 	tour2 := tour1
+	tour3 := tour1
 
 	tour2.Price += 1
+	tour3.Price += 1
 
 	if tour1.KeyData() != tour2.KeyData() || tour1.PriceData() == tour2.PriceData() {
 		t.Error("Wrong to initialize price for test.")
@@ -254,6 +256,7 @@ func TestMapToursThreadProcessPriceLogUpdate(t *testing.T) {
 
 	cache.AddQueue(thread_queue, tour1.ToString())
 	cache.AddQueue(thread_queue, tour2.ToString())
+	cache.AddQueue(thread_queue, tour3.ToString())
 
 	map_tours.ForceStopThreads = false
 	worker_base.Workers[0].MainLoop()
@@ -302,10 +305,24 @@ func TestMapToursThreadProcessPriceLogUpdate(t *testing.T) {
 		price_log_data1_key = fmt.Sprintf(map_tours.MapTourPriceLogKeyTemplate, id1)
 		price_log_data1, err1pld := cache.LRange(id1, price_log_data1_key, 0, -1)
 		if err1pld != nil {
-			t.Error("Can not read map tour PRICE LOG data from", price_log_data1_key, ". Error:", err1pld)
-		} else if price_log_data1[0] != tour2.PriceData() {
-			t.Error("Wrong PRICE LOG DATA map tour from", price_log_data1_key,
-				"[0]. Expected:", tour2.PriceData(), ", got: ", price_log_data1[0])
+			t.Error("Can not read map tour PRICE LOG data from", price_log_data1_key,
+				". Error:", err1pld)
+		} else {
+			if len(price_log_data1) != 2 {
+				t.Error("Wrong PRICE LOG DATA array length. Expected 2, got: ",
+					len(price_log_data1))
+			} else {
+				if price_log_data1[0] != tour2.PriceData() {
+					t.Error("Wrong PRICE LOG DATA map tour from", price_log_data1_key,
+						"[0]. Expected:", tour2.PriceData(),
+						", got: ", price_log_data1[0])
+				}
+				if price_log_data1[1] != tour3.PriceData() {
+					t.Error("Wrong PRICE LOG DATA map tour from", price_log_data1_key,
+						"[1]. Expected:", tour3.PriceData(),
+						", got: ", price_log_data1[1])
+				}
+			}
 		}
 	}
 
