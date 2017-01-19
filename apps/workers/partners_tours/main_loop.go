@@ -15,6 +15,8 @@ const (
 	PartnersTourIDKeyTemplate = "ptk:%s"
 	PartnersTourKeyDataKeyTemplate = "ptkk:%d"
 	PartnersTourPriceDataKeyTemplate = "ptp:%d"
+	PartnersTourInsertQueue = "partners_tours_insert"
+	PartnersTourUpdateQueue = "partners_tours_update"
 )
 var (
 	ForceStopThreads = false
@@ -102,6 +104,7 @@ func (worker *PartnersToursWorker) TourProcess(tour *tours.TourPartners) {
 		cache.Set(id_tour,
 			fmt.Sprintf(PartnersTourPriceDataKeyTemplate, id_tour),
 			tour.PriceData())
+		worker.ToInsertQueue(id_tour)
 	} else {
 		id_tour, err := strconv.ParseUint(id_tour_str, 10, 64)
 		if err != nil {
@@ -124,6 +127,7 @@ func (worker *PartnersToursWorker) TourProcess(tour *tours.TourPartners) {
 			if !is_bigger || err_price == redis.Nil {
 				// Save to price data
 				cache.Set(id_tour, fmt.Sprintf(PartnersTourPriceDataKeyTemplate, id_tour), tour.PriceData())
+				worker.ToUpdateQueue(id_tour)
 			}
 		} else {
 			log.Error.Fatal("Error compare prices:", err)
@@ -133,4 +137,12 @@ func (worker *PartnersToursWorker) TourProcess(tour *tours.TourPartners) {
 
 func (worker *PartnersToursWorker) IsPrimary() bool {
 	return worker.Settings.WorkerFirstThreadId == 0
+}
+
+func (worker *PartnersToursWorker) ToInsertQueue(id uint64) error {
+	return cache.AddQueue(PartnersTourInsertQueue, strconv.FormatUint(id, 10))
+}
+
+func (worker *PartnersToursWorker) ToUpdateQueue(id uint64) error {
+	return cache.AddQueue(PartnersTourUpdateQueue, strconv.FormatUint(id, 10))
 }

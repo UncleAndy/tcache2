@@ -16,6 +16,8 @@ const (
 	MapTourKeyDataKeyTemplate = "mtkk:%d"
 	MapTourPriceDataKeyTemplate = "mtp:%d"
 	MapTourPriceLogKeyTemplate = "mtl:%d"
+	MapTourInsertQueue = "map_tours_insert"
+	MapTourUpdateQueue = "map_tours_update"
 )
 
 var (
@@ -104,6 +106,7 @@ func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
 			fmt.Sprintf(MapTourKeyDataKeyTemplate, id_tour), tour.KeyData())
 		cache.Set(id_tour,
 			fmt.Sprintf(MapTourPriceDataKeyTemplate, id_tour), tour.PriceData())
+		worker.ToInsertQueue(id_tour)
 	} else {
 		// Compare old price with new price
 		id_tour, err := strconv.ParseUint(id_tour_str, 10, 64)
@@ -129,6 +132,7 @@ func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
 				// Save to price data
 				cache.Set(id_tour, fmt.Sprintf(MapTourPriceDataKeyTemplate, id_tour), tour.PriceData())
 			}
+			worker.ToUpdateQueue(id_tour)
 		} else {
 			log.Error.Fatal("Error compare prices:", err)
 		}
@@ -137,4 +141,12 @@ func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
 
 func (worker *MapToursWorker) IsPrimary() bool {
 	return worker.Settings.WorkerFirstThreadId == 0
+}
+
+func (worker *MapToursWorker) ToInsertQueue(id uint64) error {
+	return cache.AddQueue(MapTourInsertQueue, strconv.FormatUint(id, 10))
+}
+
+func (worker *MapToursWorker) ToUpdateQueue(id uint64) error {
+	return cache.AddQueue(MapTourUpdateQueue, strconv.FormatUint(id, 10))
 }
