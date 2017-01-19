@@ -9,6 +9,7 @@ import (
 	"github.com/uncleandy/tcache2/tours"
 	"strconv"
 	"github.com/uncleandy/tcache2/apps/workers/partners_tours"
+	"gopkg.in/redis.v4"
 )
 
 func random_tour_partners() *tours.TourPartners {
@@ -152,7 +153,23 @@ func TestPartnersToursThreadProcessSimple(t *testing.T) {
 		}
 	}
 
+	len_ins, err := cache.RedisSettings.MainServers[0].Connection.LLen(partners_tours.PartnersTourInsertQueue).Result()
+	if err != nil {
+		t.Error("Can not read partners tour INSERT queue length:", err)
+	} else if len_ins != 3 {
+		t.Error("Wrong partners tour INSERT queue length. Expected 3, got", len_ins)
+	}
+
+	len_upd, err := cache.RedisSettings.MainServers[0].Connection.LLen(partners_tours.PartnersTourUpdateQueue).Result()
+	if err != nil && err != redis.Nil {
+		t.Error("Can not read partners tour UPDATE queue length:", err)
+	} else if len_upd != 0 && err != redis.Nil {
+		t.Error("Wrong partners tour UPDATE queue length. Expected 0, got", len_upd)
+	}
+
 	cache.CleanQueue(thread_queue)
+	cache.CleanQueue(partners_tours.PartnersTourInsertQueue)
+	cache.CleanQueue(partners_tours.PartnersTourUpdateQueue)
 	cache.Del(tour1.KeyDataCRC32(), id_key_tour1)
 	cache.Del(id1, key_data1_key)
 	cache.Del(id1, price_data1_key)
@@ -227,7 +244,24 @@ func TestPartnersToursThreadProcessPriceUpdate(t *testing.T) {
 		}
 	}
 
+
+	len_ins, err := cache.RedisSettings.MainServers[0].Connection.LLen(partners_tours.PartnersTourInsertQueue).Result()
+	if err != nil {
+		t.Error("Can not read partners tour INSERT queue length:", err)
+	} else if len_ins != 1 {
+		t.Error("Wrong partners tour INSERT queue length. Expected 1, got", len_ins)
+	}
+
+	len_upd, err := cache.RedisSettings.MainServers[0].Connection.LLen(partners_tours.PartnersTourUpdateQueue).Result()
+	if err != nil {
+		t.Error("Can not read partners tour UPDATE queue length:", err)
+	} else if len_upd != 1 {
+		t.Error("Wrong partners tour UPDATE queue length. Expected 1, got", len_upd)
+	}
+
 	cache.CleanQueue(thread_queue)
+	cache.CleanQueue(partners_tours.PartnersTourInsertQueue)
+	cache.CleanQueue(partners_tours.PartnersTourUpdateQueue)
 	cache.Del(tour1.KeyDataCRC32(), id_key_tour1)
 	cache.Del(id1, key_data1_key)
 	cache.Del(id1, price_data1_key)

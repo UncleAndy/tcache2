@@ -9,6 +9,7 @@ import (
 	"time"
 	"github.com/uncleandy/tcache2/tours"
 	"strconv"
+	"gopkg.in/redis.v4"
 )
 
 func random_tour_map() *tours.TourMap {
@@ -152,7 +153,24 @@ func TestMapToursThreadProcessSimple(t *testing.T) {
 		}
 	}
 
+	len_ins, err := cache.RedisSettings.MainServers[0].Connection.LLen(map_tours.MapTourInsertQueue).Result()
+	if err != nil {
+		t.Error("Can not read map tour INSERT queue length:", err)
+	} else if len_ins != 3 {
+		t.Error("Wrong map tour INSERT queue length. Expected 3, got", len_ins)
+	}
+
+	len_upd, err := cache.RedisSettings.MainServers[0].Connection.LLen(map_tours.MapTourUpdateQueue).Result()
+	if err != nil && err != redis.Nil {
+		t.Error("Can not read map tour UPDATE queue length:", err)
+	} else if len_upd != 0 && err != redis.Nil {
+		t.Error("Wrong map tour UPDATE queue length. Expected 0, got", len_upd)
+	}
+
+
 	cache.CleanQueue(thread_queue)
+	cache.CleanQueue(map_tours.MapTourInsertQueue)
+	cache.CleanQueue(map_tours.MapTourUpdateQueue)
 	cache.Del(tour1.KeyDataCRC32(), id_key_tour1)
 	cache.Del(id1, key_data1_key)
 	cache.Del(id1, price_data1_key)
@@ -227,7 +245,23 @@ func TestMapToursThreadProcessPriceUpdate(t *testing.T) {
 		}
 	}
 
+	len_ins, err := cache.RedisSettings.MainServers[0].Connection.LLen(map_tours.MapTourInsertQueue).Result()
+	if err != nil {
+		t.Error("Can not read map tour INSERT queue length:", err)
+	} else if len_ins != 1 {
+		t.Error("Wrong map tour INSERT queue length. Expected 1, got", len_ins)
+	}
+
+	len_upd, err := cache.RedisSettings.MainServers[0].Connection.LLen(map_tours.MapTourUpdateQueue).Result()
+	if err != nil {
+		t.Error("Can not read map tour UPDATE queue length:", err)
+	} else if len_upd != 1 {
+		t.Error("Wrong map tour UPDATE queue length. Expected 1, got", len_upd)
+	}
+
 	cache.CleanQueue(thread_queue)
+	cache.CleanQueue(map_tours.MapTourInsertQueue)
+	cache.CleanQueue(map_tours.MapTourUpdateQueue)
 	cache.Del(tour1.KeyDataCRC32(), id_key_tour1)
 	cache.Del(id1, key_data1_key)
 	cache.Del(id1, price_data1_key)
@@ -326,7 +360,23 @@ func TestMapToursThreadProcessPriceLogUpdate(t *testing.T) {
 		}
 	}
 
+	len_ins, err := cache.RedisSettings.MainServers[0].Connection.LLen(map_tours.MapTourInsertQueue).Result()
+	if err != nil {
+		t.Error("Can not read map tour INSERT queue length:", err)
+	} else if len_ins != 1 {
+		t.Error("Wrong map tour INSERT queue length. Expected 1, got", len_ins)
+	}
+
+	len_upd, err := cache.RedisSettings.MainServers[0].Connection.LLen(map_tours.MapTourUpdateQueue).Result()
+	if err != nil && err != redis.Nil {
+		t.Error("Can not read map tour UPDATE queue length:", err)
+	} else if len_upd != 0 && err != redis.Nil {
+		t.Error("Wrong map tour UPDATE queue length. Expected 0, got", len_upd)
+	}
+
 	cache.CleanQueue(thread_queue)
+	cache.CleanQueue(map_tours.MapTourInsertQueue)
+	cache.CleanQueue(map_tours.MapTourUpdateQueue)
 	cache.Del(tour1.KeyDataCRC32(), id_key_tour1)
 	cache.Del(id1, key_data1_key)
 	cache.Del(id1, price_data1_key)

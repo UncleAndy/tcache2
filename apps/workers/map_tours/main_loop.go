@@ -131,8 +131,8 @@ func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
 			} else {
 				// Save to price data
 				cache.Set(id_tour, fmt.Sprintf(MapTourPriceDataKeyTemplate, id_tour), tour.PriceData())
+				worker.ToUpdateQueue(id_tour)
 			}
-			worker.ToUpdateQueue(id_tour)
 		} else {
 			log.Error.Fatal("Error compare prices:", err)
 		}
