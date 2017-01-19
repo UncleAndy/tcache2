@@ -20,6 +20,7 @@ func QueueSizesUpdate(queue string, servers *[]RedisServer) {
 		if err != nil {
 			len = 0
 		}
+
 		(*servers)[i].QueueSizesMutex.Lock()
 		(*servers)[i].QueueSizes[queue] = len
 		(*servers)[i].QueueSizesMutex.Unlock()
@@ -70,10 +71,12 @@ func MaxQueueServerSearchBy(queue string, servers *[]RedisServer) (RedisServer, 
 	var res RedisServer
 	max = 0
 	for _, server := range *servers {
+		server.QueueSizesMutex.Lock()
 		if server.QueueSizes[queue] > max {
 			res = server
 			max = server.QueueSizes[queue]
 		}
+		server.QueueSizesMutex.Unlock()
 	}
 	var err error
 	if max == 0 {
@@ -126,7 +129,13 @@ func GetQueue(queue string) (string, error) {
 func IsEmptyQueue(queue string) bool {
 	QueueSizesUpdate(queue, &RedisSettings.MainServers)
 	maxQueueServer, err := MaxQueueMainServerSearch(queue)
-	return err != nil || maxQueueServer.QueueSizes[queue] <= 0
+	lt_zero := true
+	if err == nil {
+		maxQueueServer.QueueSizesMutex.Lock()
+		lt_zero = (maxQueueServer.QueueSizes[queue] <= 0)
+		maxQueueServer.QueueSizesMutex.Unlock()
+	}
+	return err != nil || lt_zero
 }
 
 func CleanQueueBy(queue string, servers *[]RedisServer) {

@@ -120,11 +120,14 @@ func TestWorkerManagerLoop(t *testing.T) {
 		return false
 	})
 
+	worker_base.ForceStopManagerLoop = false
 	worker_base.ManagerLoop()
 
 	for !cache.IsEmptyQueue(sletat.LoaderQueueToursName) {
 		time.Sleep(1 * time.Second)
 	}
+	worker_base.ForceStopManagerLoop = true
+	time.Sleep(1 * time.Second)
 
 	map_tours_queue_1 := fmt.Sprintf(map_tours.ThreadMapToursQueueTemplate, 1)
 	map_tours_queue_2 := fmt.Sprintf(map_tours.ThreadMapToursQueueTemplate, 2)
@@ -164,6 +167,9 @@ func TestWorkerManagerLoop(t *testing.T) {
 	} else if plen2 != 2 {
 		t.Error("Wrong lenght queue", partners_tours_queue_2, ". Expected 2, got", plen2)
 	}
+
+
+	monkey.UnpatchAll()
 
 	cache.CleanQueue(sletat.LoaderQueueToursName)
 	cache.CleanQueue(map_tours_queue_1)

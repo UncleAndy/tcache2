@@ -23,6 +23,7 @@ type WorkerSettings struct {
 
 var (
 	Workers []WorkerBaseInterface
+	ForceStopManagerLoop = false
 )
 
 func RunWorkers() {
@@ -48,7 +49,7 @@ func WaitWorkersFinish() {
 func ManagerLoop() {
 	// Scan Redis tours loader queue & move tours to worker threads Redis queue
 	go func() {
-		for true {
+		for !ForceStopManagerLoop {
 			tour_str, err := cache.GetQueue(sletat.LoaderQueueToursName)
 			if err != nil || tour_str == "" {
 				time.Sleep(1 * time.Second)

@@ -38,6 +38,21 @@ func Set(shard_index uint64, key string, val string) error {
 	return err
 }
 
+func Del(shard_index uint64, key string) error {
+	main_server := main_shard_server(shard_index)
+	_, err := main_server.Connection.Del(key).Result()
+
+	if RedisSettings.ReconfigureMode {
+		old_server := old_shard_server(shard_index)
+		if !servers_equals(main_server, old_server) {
+			old_server.Connection.Del(key)
+		}
+	}
+
+	return err
+}
+
+
 func RPush(shard_index uint64, key string, val string) error {
 	main_server := main_shard_server(shard_index)
 	if RedisSettings.ReconfigureMode {

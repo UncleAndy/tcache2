@@ -18,6 +18,10 @@ const (
 	MapTourPriceLogKeyTemplate = "mtl:%d"
 )
 
+var (
+	ForceStopThreads = false
+)
+
 func (worker *MapToursWorker) MainLoop() {
 	// Create threads & fill threads array of channels
 	worker.InitThreads()
@@ -56,7 +60,7 @@ func (worker *MapToursWorker) Thread(thread_index int) {
 	go func() {
 		thread_queue := fmt.Sprintf(ThreadMapToursQueueTemplate, thread_index)
 		tour := tours.TourMap{}
-		for true {
+		for !ForceStopThreads {
 			tour_str, err := cache.GetQueue(thread_queue)
 			if err != nil || tour_str == "" {
 				time.Sleep(1 * time.Second)
@@ -87,16 +91,6 @@ func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
 		)
 	}
 
-	id_tour, err := strconv.ParseUint(id_tour_str, 10, 64)
-	if err != nil {
-		log.Error.Print(
-			"Error parse map tour id from key ",
-			fmt.Sprintf(MapTourIDKeyTemplate, tour.KeyData()),
-			":",
-			err,
-		)
-	}
-
 	if err != nil {
 		// Add new tour
 		id_tour, err := tour.GenId()
@@ -112,6 +106,16 @@ func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
 			fmt.Sprintf(MapTourPriceDataKeyTemplate, id_tour), tour.PriceData())
 	} else {
 		// Compare old price with new price
+		id_tour, err := strconv.ParseUint(id_tour_str, 10, 64)
+		if err != nil {
+			log.Error.Print(
+				"Error parse map tour id from key ",
+				fmt.Sprintf(MapTourIDKeyTemplate, tour.KeyData()),
+				":",
+				err,
+			)
+		}
+
 		old_price_data, err := cache.Get(id_tour, fmt.Sprintf(MapTourPriceDataKeyTemplate, id_tour))
 		if err != nil {
 			log.Error.Fatal("Error read PriceData for tour ", id_tour, ":", err)
