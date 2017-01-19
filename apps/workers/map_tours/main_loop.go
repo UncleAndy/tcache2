@@ -116,14 +116,14 @@ func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
 			)
 		}
 
-		old_price_data, err := cache.Get(id_tour, fmt.Sprintf(MapTourPriceDataKeyTemplate, id_tour))
-		if err != nil {
+		old_price_data, err_price := cache.Get(id_tour, fmt.Sprintf(MapTourPriceDataKeyTemplate, id_tour))
+		if err_price != nil && err_price != redis.Nil {
 			log.Error.Fatal("Error read PriceData for tour ", id_tour, ":", err)
 		}
 
 		is_bigger, err := tour.PriceBiggerThen(old_price_data)
-		if err == nil {
-			if is_bigger {
+		if err == nil || err_price == redis.Nil {
+			if is_bigger && err_price != redis.Nil {
 				cache.RPush(id_tour, fmt.Sprintf(MapTourPriceLogKeyTemplate, id_tour), tour.PriceData())
 			} else {
 				// Save to price data

@@ -21,7 +21,7 @@ func TestMapToursThreadProcessSimple(t *testing.T) {
 	init_test_redis_single()
 	init_workers()
 
-	tour1 := random_tour_map()
+	tour1 := *random_tour_map()
 	tour2 := tour1
 	tour3 := tour1
 
@@ -42,10 +42,10 @@ func TestMapToursThreadProcessSimple(t *testing.T) {
 	worker_base.Workers[0].MainLoop()
 
 	for !cache.IsEmptyQueue(thread_queue) {
-		time.Sleep(1 * time.Second)
+		time.Sleep(TestWaitTime)
 	}
 	map_tours.ForceStopThreads = true
-	time.Sleep(1 * time.Second)
+	time.Sleep(GoroutineFinishWaitTime)
 
 	id_key_tour1 := fmt.Sprintf(map_tours.MapTourIDKeyTemplate, tour1.KeyData())
 	id1str, err1 := cache.Get(tour1.KeyDataCRC32(), id_key_tour1)
@@ -111,9 +111,9 @@ func TestMapToursThreadProcessSimple(t *testing.T) {
 		price_data2, err2pd := cache.Get(id2, price_data2_key)
 		if err2pd != nil {
 			t.Error("Can not read map tour PRICE data from", price_data2_key, ". Error:", err2pd)
-		} else if price_data2 != tour1.PriceData() {
+		} else if price_data2 != tour2.PriceData() {
 			t.Error("Wrong PRICE DATA map tour from", price_data2_key,
-				". Expected:", tour1.PriceData(), ", got: ", price_data2)
+				". Expected:", tour2.PriceData(), ", got: ", price_data2)
 		}
 	}
 
@@ -137,18 +137,18 @@ func TestMapToursThreadProcessSimple(t *testing.T) {
 		key_data3, err3kd := cache.Get(id3, key_data3_key)
 		if err3kd != nil {
 			t.Error("Can not read map tour KEY data from", key_data3_key, ". Error:", err3kd)
-		} else if key_data3 != tour2.KeyData() {
+		} else if key_data3 != tour3.KeyData() {
 			t.Error("Wrong KEY DATA map tour from", key_data3_key,
-				". Expected:", tour1.KeyData(), ", got: ", key_data3)
+				". Expected:", tour3.KeyData(), ", got: ", key_data3)
 		}
 
 		price_data3_key = fmt.Sprintf(map_tours.MapTourPriceDataKeyTemplate, id3)
 		price_data3, err3pd := cache.Get(id3, price_data3_key)
 		if err3pd != nil {
 			t.Error("Can not read map tour PRICE data from", price_data3_key, ". Error:", err3pd)
-		} else if price_data3 != tour1.PriceData() {
+		} else if price_data3 != tour3.PriceData() {
 			t.Error("Wrong PRICE DATA map tour from", price_data3_key,
-				". Expected:", tour1.PriceData(), ", got: ", price_data3)
+				". Expected:", tour3.PriceData(), ", got: ", price_data3)
 		}
 	}
 
@@ -156,7 +156,7 @@ func TestMapToursThreadProcessSimple(t *testing.T) {
 	cache.Del(tour1.KeyDataCRC32(), id_key_tour1)
 	cache.Del(id1, key_data1_key)
 	cache.Del(id1, price_data1_key)
-	cache.Del(tour2.KeyDataCRC32(), id_key_tour3)
+	cache.Del(tour2.KeyDataCRC32(), id_key_tour2)
 	cache.Del(id2, key_data2_key)
 	cache.Del(id2, price_data2_key)
 	cache.Del(tour3.KeyDataCRC32(), id_key_tour3)
@@ -168,14 +168,150 @@ func TestMapToursThreadProcessPriceUpdate(t *testing.T) {
 	init_test_redis_single()
 	init_workers()
 
+	tour1 := *random_tour_map()
+	tour2 := tour1
 
+	tour2.Price -= 1
 
+	if tour1.KeyData() != tour2.KeyData() || tour1.PriceData() == tour2.PriceData() {
+		t.Error("Wrong to initialize price for test.")
+	}
+
+	thread_index := 0
+	thread_queue := fmt.Sprintf(map_tours.ThreadMapToursQueueTemplate, thread_index)
+
+	cache.AddQueue(thread_queue, tour1.ToString())
+	cache.AddQueue(thread_queue, tour2.ToString())
+
+	map_tours.ForceStopThreads = false
+	worker_base.Workers[0].MainLoop()
+
+	for !cache.IsEmptyQueue(thread_queue) {
+		time.Sleep(TestWaitTime)
+	}
+	map_tours.ForceStopThreads = true
+	time.Sleep(GoroutineFinishWaitTime)
+
+	id_key_tour1 := fmt.Sprintf(map_tours.MapTourIDKeyTemplate, tour1.KeyData())
+	id1str, err1 := cache.Get(tour1.KeyDataCRC32(), id_key_tour1)
+	var id1 uint64
+	var key_data1_key string
+	var price_data1_key string
+	if err1 != nil {
+		t.Error("Can not read map tour ID data from", id_key_tour1, ". Error:", err1)
+	} else {
+		val1int, err1int := strconv.ParseUint(id1str, 10, 64)
+		if err1int != nil || val1int <= 0 {
+			t.Error("Bad ID value '", id1str,
+				"' for map tour from", id_key_tour1,
+				". Error:", err1int)
+		}
+		id1 = val1int
+
+		key_data1_key = fmt.Sprintf(map_tours.MapTourKeyDataKeyTemplate, id1)
+		key_data1, err1kd := cache.Get(id1, key_data1_key)
+		if err1kd != nil {
+			t.Error("Can not read map tour KEY data from", key_data1_key, ". Error:", err1kd)
+		} else if key_data1 != tour1.KeyData() {
+			t.Error("Wrong KEY DATA map tour from", key_data1_key,
+				". Expected:", tour1.KeyData(), ", got: ", key_data1)
+		}
+
+		price_data1_key = fmt.Sprintf(map_tours.MapTourPriceDataKeyTemplate, id1)
+		price_data1, err1pd := cache.Get(id1, price_data1_key)
+		if err1pd != nil {
+			t.Error("Can not read map tour PRICE data from", price_data1_key, ". Error:", err1pd)
+		} else if price_data1 != tour2.PriceData() {
+			t.Error("Wrong PRICE DATA map tour from", price_data1_key,
+				". Expected:", tour2.PriceData(), ", got: ", price_data1)
+		}
+	}
+
+	cache.CleanQueue(thread_queue)
+	cache.Del(tour1.KeyDataCRC32(), id_key_tour1)
+	cache.Del(id1, key_data1_key)
+	cache.Del(id1, price_data1_key)
 }
 
 func TestMapToursThreadProcessPriceLogUpdate(t *testing.T) {
 	init_test_redis_single()
 	init_workers()
 
+	init_test_redis_single()
+	init_workers()
 
+	tour1 := *random_tour_map()
+	tour2 := tour1
 
+	tour2.Price += 1
+
+	if tour1.KeyData() != tour2.KeyData() || tour1.PriceData() == tour2.PriceData() {
+		t.Error("Wrong to initialize price for test.")
+	}
+
+	thread_index := 0
+	thread_queue := fmt.Sprintf(map_tours.ThreadMapToursQueueTemplate, thread_index)
+
+	cache.AddQueue(thread_queue, tour1.ToString())
+	cache.AddQueue(thread_queue, tour2.ToString())
+
+	map_tours.ForceStopThreads = false
+	worker_base.Workers[0].MainLoop()
+
+	for !cache.IsEmptyQueue(thread_queue) {
+		time.Sleep(TestWaitTime)
+	}
+	map_tours.ForceStopThreads = true
+	time.Sleep(GoroutineFinishWaitTime)
+
+	id_key_tour1 := fmt.Sprintf(map_tours.MapTourIDKeyTemplate, tour1.KeyData())
+	id1str, err1 := cache.Get(tour1.KeyDataCRC32(), id_key_tour1)
+	var id1 uint64
+	var key_data1_key string
+	var price_data1_key string
+	var price_log_data1_key string
+	if err1 != nil {
+		t.Error("Can not read map tour ID data from", id_key_tour1, ". Error:", err1)
+	} else {
+		val1int, err1int := strconv.ParseUint(id1str, 10, 64)
+		if err1int != nil || val1int <= 0 {
+			t.Error("Bad ID value '", id1str,
+				"' for map tour from", id_key_tour1,
+				". Error:", err1int)
+		}
+		id1 = val1int
+
+		key_data1_key = fmt.Sprintf(map_tours.MapTourKeyDataKeyTemplate, id1)
+		key_data1, err1kd := cache.Get(id1, key_data1_key)
+		if err1kd != nil {
+			t.Error("Can not read map tour KEY data from", key_data1_key, ". Error:", err1kd)
+		} else if key_data1 != tour1.KeyData() {
+			t.Error("Wrong KEY DATA map tour from", key_data1_key,
+				". Expected:", tour1.KeyData(), ", got: ", key_data1)
+		}
+
+		price_data1_key = fmt.Sprintf(map_tours.MapTourPriceDataKeyTemplate, id1)
+		price_data1, err1pd := cache.Get(id1, price_data1_key)
+		if err1pd != nil {
+			t.Error("Can not read map tour PRICE data from", price_data1_key, ". Error:", err1pd)
+		} else if price_data1 != tour1.PriceData() {
+			t.Error("Wrong PRICE DATA map tour from", price_data1_key,
+				". Expected:", tour1.PriceData(), ", got: ", price_data1)
+		}
+
+		price_log_data1_key = fmt.Sprintf(map_tours.MapTourPriceLogKeyTemplate, id1)
+		price_log_data1, err1pld := cache.LRange(id1, price_log_data1_key, 0, -1)
+		if err1pld != nil {
+			t.Error("Can not read map tour PRICE LOG data from", price_log_data1_key, ". Error:", err1pld)
+		} else if price_log_data1[0] != tour2.PriceData() {
+			t.Error("Wrong PRICE LOG DATA map tour from", price_log_data1_key,
+				"[0]. Expected:", tour2.PriceData(), ", got: ", price_log_data1[0])
+		}
+	}
+
+	cache.CleanQueue(thread_queue)
+	cache.Del(tour1.KeyDataCRC32(), id_key_tour1)
+	cache.Del(id1, key_data1_key)
+	cache.Del(id1, price_data1_key)
+	cache.Del(id1, price_log_data1_key)
 }

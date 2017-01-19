@@ -124,10 +124,10 @@ func TestWorkerManagerLoop(t *testing.T) {
 	worker_base.ManagerLoop()
 
 	for !cache.IsEmptyQueue(sletat.LoaderQueueToursName) {
-		time.Sleep(1 * time.Second)
+		time.Sleep(TestWaitTime)
 	}
 	worker_base.ForceStopManagerLoop = true
-	time.Sleep(1 * time.Second)
+	time.Sleep(GoroutineFinishWaitTime)
 
 	map_tours_queue_1 := fmt.Sprintf(map_tours.ThreadMapToursQueueTemplate, 1)
 	map_tours_queue_2 := fmt.Sprintf(map_tours.ThreadMapToursQueueTemplate, 2)
