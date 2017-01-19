@@ -16,6 +16,9 @@ const (
 	PartnersTourKeyDataKeyTemplate = "ptkk:%d"
 	PartnersTourPriceDataKeyTemplate = "ptp:%d"
 )
+var (
+	ForceStopThreads = false
+)
 
 func (worker *PartnersToursWorker) MainLoop() {
 	// Create threads & fill threads array of channels
@@ -52,7 +55,7 @@ func (worker *PartnersToursWorker) Thread(thread_index int) {
 	go func() {
 		thread_queue := fmt.Sprintf(ThreadPartnersToursQueueTemplate, thread_index)
 		tour := tours.TourPartners{}
-		for true {
+		for !ForceStopThreads {
 			tour_str, err := cache.GetQueue(thread_queue)
 			if err != nil || tour_str == "" {
 				time.Sleep(1 * time.Second)
@@ -83,19 +86,9 @@ func (worker *PartnersToursWorker) TourProcess(tour *tours.TourPartners) {
 		)
 	}
 
-	id_tour, err := strconv.ParseUint(id_tour_str, 10, 64)
-	if err != nil {
-		log.Error.Print(
-			"Error parse map tour id from key ",
-			fmt.Sprintf(PartnersTourIDKeyTemplate, tour.KeyData()),
-			":",
-			err,
-		)
-	}
-
 	if err != nil {
 		// Add new tour
-		id_tour, err = tour.GenId()
+		id_tour, err := tour.GenId()
 		if err != nil {
 			log.Error.Fatal("Error GenID for tour:", err)
 		}
@@ -110,15 +103,25 @@ func (worker *PartnersToursWorker) TourProcess(tour *tours.TourPartners) {
 			fmt.Sprintf(PartnersTourPriceDataKeyTemplate, id_tour),
 			tour.PriceData())
 	} else {
-		// Compare old price with new price
-		old_price_data, err := cache.Get(id_tour, fmt.Sprintf(PartnersTourPriceDataKeyTemplate, id_tour))
+		id_tour, err := strconv.ParseUint(id_tour_str, 10, 64)
 		if err != nil {
+			log.Error.Print(
+				"Error parse map tour id from key ",
+				fmt.Sprintf(PartnersTourIDKeyTemplate, tour.KeyData()),
+				":",
+				err,
+			)
+		}
+
+		// Compare old price with new price
+		old_price_data, err_price := cache.Get(id_tour, fmt.Sprintf(PartnersTourPriceDataKeyTemplate, id_tour))
+		if err_price != nil && err_price != redis.Nil {
 			log.Error.Fatal("Error read PriceData for tour ", id_tour, ":", err)
 		}
 
 		is_bigger, err := tour.PriceBiggerThen(old_price_data)
-		if err == nil {
-			if !is_bigger {
+		if err == nil || err_price == redis.Nil {
+			if !is_bigger || err_price == redis.Nil {
 				// Save to price data
 				cache.Set(id_tour, fmt.Sprintf(PartnersTourPriceDataKeyTemplate, id_tour), tour.PriceData())
 			}

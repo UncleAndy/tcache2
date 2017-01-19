@@ -24,6 +24,7 @@ func TestTourToString(t *testing.T) {
 		"2016-12-10",
 		"20000",
 		"1",
+		"34",
 		"7",
 		"Regular Meal",
 		"8",

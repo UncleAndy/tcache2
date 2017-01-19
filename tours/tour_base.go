@@ -10,7 +10,7 @@ import (
 const (
 	TourBaseDataSeparator = "|"
 	TourBaseDataSeparatorCode = "&#124;"
-	TourBaseDataSize = 36
+	TourBaseDataSize = 37
 )
 
 type TourBase struct {
@@ -160,22 +160,23 @@ func (t *TourBase) FieldsMapInt() map[string]int {
 		"SourceId" 	: 10,
 		"Price" 	: 12,
 		"CurrencyId"	: 13,
-		"TownId"	: 14,
-		"TicketsIncluded" 	: 16,
-		"HasEconomTicketsDpt"	: 17,
-		"HasEconomTicketsRtn"	: 18,
-		"HotelIsInStop"		: 19,
-		"RequestId"		: 20,
-		"OfferId"		: 21,
-		"FewEconomTicketsDpt"	: 22,
-		"FewEconomTicketsRtn"	: 23,
-		"FewPlacesInHotel"	: 24,
-		"Flags"			: 25,
-		"PriceByr"	: 31,
-		"PriceEur"	: 32,
-		"PriceUsd"	: 33,
-		"FuelSurchargeMin"	: 34,
-		"FuelSurchargeMax"	: 35,
+		"CountryId"	: 14,
+		"TownId"	: 15,
+		"TicketsIncluded" 	: 17,
+		"HasEconomTicketsDpt"	: 18,
+		"HasEconomTicketsRtn"	: 19,
+		"HotelIsInStop"		: 20,
+		"RequestId"		: 21,
+		"OfferId"		: 22,
+		"FewEconomTicketsDpt"	: 23,
+		"FewEconomTicketsRtn"	: 24,
+		"FewPlacesInHotel"	: 25,
+		"Flags"			: 26,
+		"PriceByr"	: 32,
+		"PriceEur"	: 33,
+		"PriceUsd"	: 34,
+		"FuelSurchargeMin"	: 35,
+		"FuelSurchargeMax"	: 36,
 	}
 }
 
@@ -191,12 +192,12 @@ func (t *TourBase) FieldsMapString() map[string]int {
 	return map[string]int{
 		"Checkin" 	: 1,
 		"UpdateDate"	: 11,
-		"MealName"	: 15,
-		"Description"	: 26,
-		"TourUrl"	: 27,
-		"RoomName"	: 28,
-		"ReceivingParty" : 29,
-		"HtPlaceName"	: 30,
+		"MealName"	: 16,
+		"Description"	: 27,
+		"TourUrl"	: 28,
+		"RoomName"	: 29,
+		"ReceivingParty" : 30,
+		"HtPlaceName"	: 31,
 	}
 }
 
