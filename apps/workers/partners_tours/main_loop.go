@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"gopkg.in/redis.v4"
 	"strconv"
+	"github.com/hjr265/redsync.go/redsync"
 )
 
 const (
@@ -17,7 +18,9 @@ const (
 	PartnersTourPriceDataKeyTemplate = "ptp:%d"
 	PartnersTourInsertQueue = "partners_tours_insert"
 	PartnersTourUpdateQueue = "partners_tours_update"
+	PartnersTourUpdateMutexTemplate = "partners_update_%d"
 )
+
 var (
 	ForceStopThreads = false
 )
@@ -88,6 +91,7 @@ func (worker *PartnersToursWorker) TourProcess(tour *tours.TourPartners) {
 		)
 	}
 
+	var mutex *redsync.Mutex
 	if err != nil {
 		// Add new tour
 		id_tour, err := tour.GenId()
@@ -95,6 +99,7 @@ func (worker *PartnersToursWorker) TourProcess(tour *tours.TourPartners) {
 			log.Error.Fatal("Error GenID for tour:", err)
 		}
 
+		mutex = worker.LockTourUpdate(id_tour)
 		cache.Set(crc,
 			fmt.Sprintf(PartnersTourIDKeyTemplate, tour.KeyData()),
 			strconv.FormatUint(id_tour, 10))
@@ -116,10 +121,11 @@ func (worker *PartnersToursWorker) TourProcess(tour *tours.TourPartners) {
 			)
 		}
 
+		mutex = worker.LockTourUpdate(id_tour)
 		// Compare old price with new price
 		old_price_data, err_price := cache.Get(id_tour, fmt.Sprintf(PartnersTourPriceDataKeyTemplate, id_tour))
 		if err_price != nil && err_price != redis.Nil {
-			log.Error.Fatal("Error read PriceData for tour ", id_tour, ":", err)
+			log.Error.Print("Error read PriceData for tour ", id_tour, ":", err)
 		}
 
 		is_bigger, err := tour.PriceBiggerThen(old_price_data)
@@ -130,9 +136,10 @@ func (worker *PartnersToursWorker) TourProcess(tour *tours.TourPartners) {
 				worker.ToUpdateQueue(id_tour)
 			}
 		} else {
-			log.Error.Fatal("Error compare prices:", err)
+			log.Error.Print("Error compare prices:", err)
 		}
 	}
+	if (mutex != nil) { mutex.Unlock() }
 }
 
 func (worker *PartnersToursWorker) IsPrimary() bool {
@@ -145,4 +152,14 @@ func (worker *PartnersToursWorker) ToInsertQueue(id uint64) error {
 
 func (worker *PartnersToursWorker) ToUpdateQueue(id uint64) error {
 	return cache.AddQueue(PartnersTourUpdateQueue, strconv.FormatUint(id, 10))
+}
+
+
+func (worker *PartnersToursWorker) LockTourUpdate(id uint64) *redsync.Mutex {
+	mutex, err := cache.NewMutex(fmt.Sprintf(PartnersTourUpdateMutexTemplate, id))
+	if err != nil {
+		return nil
+	}
+	mutex.Lock()
+	return mutex
 }

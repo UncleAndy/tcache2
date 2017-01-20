@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"gopkg.in/redis.v4"
 	"strconv"
+	"github.com/hjr265/redsync.go/redsync"
 )
 
 const (
@@ -18,6 +19,7 @@ const (
 	MapTourPriceLogKeyTemplate = "mtl:%d"
 	MapTourInsertQueue = "map_tours_insert"
 	MapTourUpdateQueue = "map_tours_update"
+	MapTourUpdateMutexTemplate = "map_update_%d"
 )
 
 var (
@@ -93,6 +95,7 @@ func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
 		)
 	}
 
+	var mutex *redsync.Mutex
 	if err != nil {
 		// Add new tour
 		id_tour, err := tour.GenId()
@@ -100,6 +103,7 @@ func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
 			log.Error.Fatal("Error GenID for tour:", err)
 		}
 
+		mutex = worker.LockTourUpdate(id_tour)
 		cache.Set(crc,
 			fmt.Sprintf(MapTourIDKeyTemplate, tour.KeyData()), strconv.FormatUint(id_tour, 10))
 		cache.Set(id_tour,
@@ -119,9 +123,10 @@ func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
 			)
 		}
 
+		mutex = worker.LockTourUpdate(id_tour)
 		old_price_data, err_price := cache.Get(id_tour, fmt.Sprintf(MapTourPriceDataKeyTemplate, id_tour))
 		if err_price != nil && err_price != redis.Nil {
-			log.Error.Fatal("Error read PriceData for tour ", id_tour, ":", err)
+			log.Error.Print("Error read PriceData for tour ", id_tour, ":", err)
 		}
 
 		is_bigger, err := tour.PriceBiggerThen(old_price_data)
@@ -134,9 +139,10 @@ func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
 				worker.ToUpdateQueue(id_tour)
 			}
 		} else {
-			log.Error.Fatal("Error compare prices:", err)
+			log.Error.Print("Error compare prices:", err)
 		}
 	}
+	if (mutex != nil) { mutex.Unlock() }
 }
 
 func (worker *MapToursWorker) IsPrimary() bool {
@@ -149,4 +155,13 @@ func (worker *MapToursWorker) ToInsertQueue(id uint64) error {
 
 func (worker *MapToursWorker) ToUpdateQueue(id uint64) error {
 	return cache.AddQueue(MapTourUpdateQueue, strconv.FormatUint(id, 10))
+}
+
+func (worker *MapToursWorker) LockTourUpdate(id uint64) *redsync.Mutex {
+	mutex, err := cache.NewMutex(fmt.Sprintf(MapTourUpdateMutexTemplate, id))
+	if err != nil {
+		return nil
+	}
+	mutex.Lock()
+	return mutex
 }
