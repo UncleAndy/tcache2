@@ -5,6 +5,8 @@ import (
 	"strings"
 	"fmt"
 	"reflect"
+	"github.com/hjr265/redsync.go/redsync"
+	"github.com/uncleandy/tcache2/cache"
 )
 
 const (
@@ -12,6 +14,60 @@ const (
 	TourBaseDataSeparatorCode = "&#124;"
 	TourBaseDataSize = 37
 )
+
+var (
+	TourBaseDataFields = DataOrderFields{
+		StringFields	: map[string]int{
+			"Checkin" 	: 1,
+			"UpdateDate"	: 11,
+			"MealName"	: 16,
+			"Description"	: 27,
+			"TourUrl"	: 28,
+			"RoomName"	: 29,
+			"ReceivingParty" : 30,
+			"HtPlaceName"	: 31,
+		},
+		IntFields	: map[string]int{
+			"HotelId" 	: 0,
+			"DptCityId" 	: 2,
+			"Nights" 	: 3,
+			"Adults" 	: 4,
+			"MealId" 	: 5,
+			"Kids" 		: 6,
+			"SourceId" 	: 10,
+			"Price" 	: 12,
+			"CurrencyId"	: 13,
+			"CountryId"	: 14,
+			"TownId"	: 15,
+			"TicketsIncluded" 	: 17,
+			"HasEconomTicketsDpt"	: 18,
+			"HasEconomTicketsRtn"	: 19,
+			"HotelIsInStop"		: 20,
+			"RequestId"		: 21,
+			"OfferId"		: 22,
+			"FewEconomTicketsDpt"	: 23,
+			"FewEconomTicketsRtn"	: 24,
+			"FewPlacesInHotel"	: 25,
+			"Flags"			: 26,
+			"PriceByr"	: 32,
+			"PriceEur"	: 33,
+			"PriceUsd"	: 34,
+			"FuelSurchargeMin"	: 35,
+			"FuelSurchargeMax"	: 36,
+		},
+		RefIntFields	: map[string]int{
+			"Kid1Age"	: 7,
+			"Kid2Age"	: 8,
+			"Kid3Age"	: 9,
+		},
+	}
+)
+
+type DataOrderFields struct {
+	StringFields 	map[string]int
+	IntFields 	map[string]int
+	RefIntFields	map[string]int
+}
 
 type TourBase struct {
 	SourceId   		int    `xml:"sourceId,attr"`
@@ -74,44 +130,17 @@ type TourInterface interface {
 }
 
 func (t *TourBase) ToString() string {
-	tour_data := make([]string, TourBaseDataSize)
-
-	for field, position := range t.FieldsMapInt() {
-		tour_data[position] = strconv.FormatInt(
-			reflect.ValueOf(t).Elem().FieldByName(field).Int(), 10,
-		)
-	}
-
-	for field, position := range t.FieldsMapString() {
-		tour_data[position] = TourEscaped(
-			reflect.ValueOf(t).Elem().FieldByName(field).String(),
-			TourBaseDataSeparator, TourBaseDataSeparatorCode,
-		)
-	}
-
-	for field, position := range t.FieldsMapRefInt() {
-		elem := reflect.ValueOf(t).Elem().FieldByName(field)
-		if elem.IsNil() {
-			tour_data[position] = "-1"
-		} else {
-			tour_data[position] = strconv.FormatInt(elem.Elem().Int(), 10)
-		}
-	}
-
-	return strings.Join(tour_data, TourBaseDataSeparator)
+	return t.FieldsToString(&TourBaseDataFields)
 }
 
 func (t *TourBase) FromString(source string) error {
-	tour_data := strings.Split(source, TourBaseDataSeparator)
+	return t.FieldsFromString(source, &TourBaseDataFields)
+}
 
-	if len(tour_data) != TourBaseDataSize {
-		return fmt.Errorf(
-			"Tour data size is wrong. Expected %d, got %d", TourBaseDataSize,
-			len(tour_data),
-		)
-	}
+func (t *TourBase) FieldsFromString(data_str string, fields_order *DataOrderFields ) error {
+	tour_data := strings.Split(data_str, TourBaseDataSeparator)
 
-	for field, position := range t.FieldsMapInt() {
+	for field, position := range fields_order.IntFields {
 		val, err := strconv.ParseInt(tour_data[position], 10, 64)
 		if err != nil {
 			return fmt.Errorf("Parse error for int '%s': '%s'", field, tour_data[position])
@@ -119,7 +148,7 @@ func (t *TourBase) FromString(source string) error {
 		reflect.ValueOf(t).Elem().FieldByName(field).SetInt(val)
 	}
 
-	for field, position := range t.FieldsMapString() {
+	for field, position := range fields_order.StringFields {
 		reflect.ValueOf(t).Elem().FieldByName(field).SetString(
 			TourUnEscaped(tour_data[position], TourBaseDataSeparator, TourBaseDataSeparatorCode),
 		)
@@ -138,7 +167,7 @@ func (t *TourBase) FromString(source string) error {
 		t.Kid3Age = &kidsAge
 	}
 
-	for field, position := range t.FieldsMapRefInt() {
+	for field, position := range fields_order.RefIntFields {
 		val, err := strconv.ParseInt(tour_data[position], 10, 64)
 		if err != nil {
 			return fmt.Errorf("Parse error for ref int '%s': '%s'", field, tour_data[position])
@@ -149,56 +178,33 @@ func (t *TourBase) FromString(source string) error {
 	return nil
 }
 
-func (t *TourBase) FieldsMapInt() map[string]int {
-	return map[string]int{
-		"HotelId" 	: 0,
-		"DptCityId" 	: 2,
-		"Nights" 	: 3,
-		"Adults" 	: 4,
-		"MealId" 	: 5,
-		"Kids" 		: 6,
-		"SourceId" 	: 10,
-		"Price" 	: 12,
-		"CurrencyId"	: 13,
-		"CountryId"	: 14,
-		"TownId"	: 15,
-		"TicketsIncluded" 	: 17,
-		"HasEconomTicketsDpt"	: 18,
-		"HasEconomTicketsRtn"	: 19,
-		"HotelIsInStop"		: 20,
-		"RequestId"		: 21,
-		"OfferId"		: 22,
-		"FewEconomTicketsDpt"	: 23,
-		"FewEconomTicketsRtn"	: 24,
-		"FewPlacesInHotel"	: 25,
-		"Flags"			: 26,
-		"PriceByr"	: 32,
-		"PriceEur"	: 33,
-		"PriceUsd"	: 34,
-		"FuelSurchargeMin"	: 35,
-		"FuelSurchargeMax"	: 36,
-	}
-}
+func (t *TourBase) FieldsToString(fields_order *DataOrderFields ) string {
+	fields_data := make([]string,
+		len(fields_order.IntFields) + len(fields_order.StringFields) + len(fields_order.RefIntFields))
 
-func (t *TourBase) FieldsMapRefInt() map[string]int {
-	return map[string]int{
-		"Kid1Age"	: 7,
-		"Kid2Age"	: 8,
-		"Kid3Age"	: 9,
+	for field, position := range fields_order.IntFields {
+		fields_data[position] = strconv.FormatInt(
+			reflect.ValueOf(t).Elem().FieldByName(field).Int(), 10,
+		)
 	}
-}
 
-func (t *TourBase) FieldsMapString() map[string]int {
-	return map[string]int{
-		"Checkin" 	: 1,
-		"UpdateDate"	: 11,
-		"MealName"	: 16,
-		"Description"	: 27,
-		"TourUrl"	: 28,
-		"RoomName"	: 29,
-		"ReceivingParty" : 30,
-		"HtPlaceName"	: 31,
+	for field, position := range fields_order.StringFields {
+		fields_data[position] = TourEscaped(
+			reflect.ValueOf(t).Elem().FieldByName(field).String(),
+			TourBaseDataSeparator, TourBaseDataSeparatorCode,
+		)
 	}
+
+	for field, position := range fields_order.RefIntFields {
+		elem := reflect.ValueOf(t).Elem().FieldByName(field)
+		if elem.IsNil() {
+			fields_data[position] = "-1"
+		} else {
+			fields_data[position] = strconv.FormatInt(elem.Elem().Int(), 10)
+		}
+	}
+
+	return strings.Join(fields_data, TourBaseDataSeparator)
 }
 
 func TourEscaped(source string, symbol string, code string) string {
@@ -207,4 +213,13 @@ func TourEscaped(source string, symbol string, code string) string {
 
 func TourUnEscaped(source string, symbol string, code string) string {
 	return strings.Replace(source, code, symbol, -1)
+}
+
+func LockTourUpdate(template string, id uint64) *redsync.Mutex {
+	mutex, err := cache.NewMutex(fmt.Sprintf(template, id))
+	if err != nil {
+		return nil
+	}
+	mutex.Lock()
+	return mutex
 }

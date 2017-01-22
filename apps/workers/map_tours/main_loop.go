@@ -19,7 +19,6 @@ const (
 	MapTourPriceLogKeyTemplate = "mtl:%d"
 	MapTourInsertQueue = "map_tours_insert"
 	MapTourUpdateQueue = "map_tours_update"
-	MapTourUpdateMutexTemplate = "map_update_%d"
 )
 
 var (
@@ -158,10 +157,5 @@ func (worker *MapToursWorker) ToUpdateQueue(id uint64) error {
 }
 
 func (worker *MapToursWorker) LockTourUpdate(id uint64) *redsync.Mutex {
-	mutex, err := cache.NewMutex(fmt.Sprintf(MapTourUpdateMutexTemplate, id))
-	if err != nil {
-		return nil
-	}
-	mutex.Lock()
-	return mutex
+	return tours.LockMapTourUpdate(id)
 }

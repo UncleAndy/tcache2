@@ -6,12 +6,54 @@ import (
 	"hash/crc32"
 	"github.com/uncleandy/tcache2/cache"
 	"time"
+	"github.com/hjr265/redsync.go/redsync"
+	"fmt"
 )
 
 const (
 	TourMapKeyDataSeparator = "|"
 	TourMapKeyDataSeparatorCode = "&#124;"
 	TourMapRedisGenIdKey = "serial_map_tour"
+	MapTourUpdateMutexTemplate = "map_update_%d"
+)
+
+var (
+	TourMapKeyDataFields = DataOrderFields{
+		StringFields	: map[string]int{
+			"Checkin": 1,
+		},
+		IntFields	: map[string]int{
+			"HotelId"	: 0,
+			"DptCityId"	: 2,
+			"Nights"	: 3,
+			"Adults"	: 4,
+			"MealId"	: 5,
+			"Kids"		: 6,
+		},
+		RefIntFields	: map[string]int{
+			"Kid1Age"	: 7,
+			"Kid2Age"	: 8,
+			"Kid3Age"	: 9,
+		},
+	}
+	TourMapPriceDataFields = DataOrderFields{
+		StringFields	: map[string]int{
+			"UpdateDate"	: 1,
+			"RoomName"	: 8,
+			"HtPlaceName"	: 9,
+			"TourUrl"	: 10,
+		},
+		IntFields	: map[string]int{
+			"Price"			: 0,
+			"FuelSurchargeMin"	: 2,
+			"FuelSurchargeMax"	: 3,
+			"TicketsIncluded"	: 4,
+			"HasEconomTicketsDpt"	: 5,
+			"HasEconomTicketsRtn"	: 6,
+			"HotelIsInStop"		: 7,
+		},
+		RefIntFields	: map[string]int{},
+	}
 )
 
 type TourMap struct {
@@ -49,6 +91,10 @@ func (t *TourMap) KeyData() string {
 	return strings.Join(key_data, TourMapKeyDataSeparator)
 }
 
+func (t *TourMap) FromKeyData(key_data string) error {
+	return t.FieldsFromString(key_data, &TourMapKeyDataFields)
+}
+
 func (t *TourMap) PriceData() string {
 	price_data := []string{
 		strconv.Itoa(t.Price),
@@ -64,6 +110,10 @@ func (t *TourMap) PriceData() string {
 		TourEscaped(t.TourUrl, TourMapKeyDataSeparator, TourMapKeyDataSeparatorCode),
 	}
 	return strings.Join(price_data, TourMapKeyDataSeparator)
+}
+
+func (t *TourMap) FromPriceData(price_data string) error {
+	return t.FieldsFromString(price_data, &TourMapPriceDataFields)
 }
 
 func (t *TourMap) KeyDataCRC32() uint64 {
@@ -98,4 +148,8 @@ func (t *TourMap) UpdateDateLaterThen(price_data_str string) (bool, error) {
 	}
 
 	return new_update_time.After(old_update_time), nil
+}
+
+func LockMapTourUpdate(id uint64) *redsync.Mutex {
+	return LockTourUpdate(MapTourUpdateMutexTemplate, id)
 }

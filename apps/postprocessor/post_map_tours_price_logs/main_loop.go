@@ -11,6 +11,10 @@ func (post_worker *PostMapToursWorker) InitThreads() {
 	}
 }
 
+func (post_worker *PostMapToursWorker) FinishThreads() {
+	close(post_worker.ToursChanel)
+}
+
 func (post_worker *PostMapToursWorker) Thread(thread_index int) {
 	go func() {
 		for id := range post_worker.ToursChanel {
