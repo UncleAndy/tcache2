@@ -18,7 +18,7 @@ func (post_worker *PostMapToursWorker) FinishThreads() {
 func (post_worker *PostMapToursWorker) Thread(thread_index int) {
 	go func() {
 		for id := range post_worker.ToursChanel {
-			if id % uint64(post_worker.Settings.AllThreadsCount) == thread_index {
+			if id % uint64(post_worker.Settings.AllThreadsCount) == uint64(thread_index) {
 				post_worker.ProcessPriceLogs(id)
 			}
 		}

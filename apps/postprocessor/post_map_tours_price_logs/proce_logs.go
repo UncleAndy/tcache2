@@ -10,6 +10,10 @@ import (
 	"time"
 )
 
+const (
+	PriceDataExpiredDuration = 4 * time.Hour
+)
+
 func (post_worker *PostMapToursWorker) ProcessPriceLogs(tour_id uint64) {
 	price_log_key := fmt.Sprintf(map_tours.MapTourPriceLogKeyTemplate, tour_id)
 	price_log, err := cache.LRange(tour_id, price_log_key, 0, -1)
@@ -33,8 +37,27 @@ func (post_worker *PostMapToursWorker) ProcessPriceLogs(tour_id uint64) {
 	tour := tours.TourMap{}
 	tour.FromPriceData(price_data)
 
+	if !post_worker.PriceDataExpired(&tour) {
+		return
+	}
+
+	expire_time := post_worker.CurrentExpireTime().Format("2006-01-02 15:04:05")
+	price_time, err := time.Parse("2006-01-02 15:04:05", tour.UpdateDate)
+	if err != nil {
+		log.Error.Print("Wrong tour.UpdateTime string for tour: ", tour.UpdateDate, "\n", err)
+	} else {
+		if post_worker.CurrentExpireTime().Unix() < price_time.Unix() {
+			expire_time = price_time.Format("2006-01-02 15:04:05")
+		}
+	}
+
 	// Select log records only after current time of price
-	actual_logs := PriceLogAfterTime(price_log, tour.UpdateDate)
+	actual_logs := PriceLogAfterTime(price_log, expire_time)
+
+	if len(actual_logs) <= 0 {
+		cache.Del(tour_id, price_log_key)
+		return
+	}
 
 	// Find min price from price_logs
 	var min_price_data string
@@ -57,12 +80,27 @@ func (post_worker *PostMapToursWorker) ProcessPriceLogs(tour_id uint64) {
 		cache.Set(tour_id, price_data_key, min_price_data)
 
 		// Save new price_log if not empty
-		new_price_logs := PriceLogAfterTime(min_price_time)
+		new_price_logs := PriceLogAfterTime(price_log, min_price_time)
 		cache.Del(tour_id, price_log_key)
 		for _, new_price_log_row := range new_price_logs {
 			cache.RPush(tour_id, price_log_key, new_price_log_row)
 		}
 	}
+}
+
+func (post_worker *PostMapToursWorker) PriceDataExpired(tour *tours.TourMap) bool {
+	price_time, err := time.Parse("2006-01-02 15:04:05", tour.UpdateDate)
+	if err != nil {
+		log.Error.Print("Wrong tour.UpdateTime string for tour: ", tour.UpdateDate, "\n", err)
+		return false
+	}
+
+	expire_time_unix := time.Now().Add(-PriceDataExpiredDuration).UTC().Unix()
+	return price_time.Unix() <= expire_time_unix
+}
+
+func (post_worker *PostMapToursWorker) CurrentExpireTime() time.Time {
+	return time.Now().Add(-PriceDataExpiredDuration).UTC()
 }
 
 // Return list of price log records with UpdateDate after from param
@@ -71,9 +109,9 @@ func PriceLogAfterTime(price_log []string, time_str string) []string {
 		return price_log
 	}
 
-	compare_time, err := time.Parse("2015-03-07 11:06:39", time_str)
+	compare_time, err := time.Parse("2006-01-02 15:04:05", time_str)
 	if err != nil {
-		log.Error.Print("Wrong time_str param in PriceLogAfterTime: ", time_str)
+		log.Error.Print("Wrong time_str param in PriceLogAfterTime: ", time_str, "\n", err)
 	}
 	compare_time_unix := compare_time.Unix()
 
@@ -87,7 +125,7 @@ func PriceLogAfterTime(price_log []string, time_str string) []string {
 			continue
 		}
 
-		log_price_time, err := time.Parse("2015-03-07 11:06:39", tour.UpdateDate)
+		log_price_time, err := time.Parse("2006-01-02 15:04:05", tour.UpdateDate)
 		if log_price_time.Unix() > compare_time_unix {
 			result = append(result, row)
 		}

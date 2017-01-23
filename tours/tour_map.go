@@ -7,7 +7,6 @@ import (
 	"github.com/uncleandy/tcache2/cache"
 	"time"
 	"github.com/hjr265/redsync.go/redsync"
-	"fmt"
 )
 
 const (
@@ -137,12 +136,12 @@ func (t *TourMap) PriceBiggerThen(price_data_str string) (bool, error) {
 
 func (t *TourMap) UpdateDateLaterThen(price_data_str string) (bool, error) {
 	price_data := strings.Split(price_data_str, TourMapKeyDataSeparator)
-	old_update_time, err := time.Parse("2015-03-07 11:06:39", price_data[1])
+	old_update_time, err := time.Parse("2006-01-02 15:04:05", price_data[1])
 	if err != nil {
 		return false, err
 	}
 
-	new_update_time, err := time.Parse("2015-03-07 11:06:39", t.UpdateDate)
+	new_update_time, err := time.Parse("2006-01-02 15:04:05", t.UpdateDate)
 	if err != nil {
 		return false, err
 	}
