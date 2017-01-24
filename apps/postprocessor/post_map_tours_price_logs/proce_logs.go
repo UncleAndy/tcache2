@@ -8,6 +8,7 @@ import (
 	"gopkg.in/redis.v4"
 	"github.com/uncleandy/tcache2/tours"
 	"time"
+	"strconv"
 )
 
 const (
@@ -85,6 +86,9 @@ func (post_worker *PostMapToursWorker) ProcessPriceLogs(tour_id uint64) {
 		for _, new_price_log_row := range new_price_logs {
 			cache.RPush(tour_id, price_log_key, new_price_log_row)
 		}
+
+		// Add id to update queue
+		cache.AddQueue(map_tours.MapTourUpdateQueue, strconv.FormatUint(tour_id, 10))
 	}
 }
 
