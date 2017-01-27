@@ -22,6 +22,9 @@ func TestMapToursThreadProcessSimple(t *testing.T) {
 	init_test_redis_single()
 	init_workers()
 
+	cache.CleanQueue(map_tours.MapTourInsertQueue)
+	cache.CleanQueue(map_tours.MapTourUpdateQueue)
+
 	tour1 := *random_tour_map()
 	tour2 := tour1
 	tour3 := tour1

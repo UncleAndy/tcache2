@@ -7,6 +7,7 @@ import (
 	"github.com/uncleandy/tcache2/cache"
 	"strconv"
 	"github.com/fellah/tcache/log"
+	"github.com/uncleandy/tcache2/db"
 )
 
 var (
@@ -16,6 +17,9 @@ var (
 // Sync prices with price logs
 
 func main() {
+	cache.InitFromEnv()
+	db.Init()
+
 	worker = &post_map_tours_price_logs.PostMapToursWorker{}
 
 	worker.Init()

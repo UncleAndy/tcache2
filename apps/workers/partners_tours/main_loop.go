@@ -18,6 +18,7 @@ const (
 	PartnersTourPriceDataKeyTemplate = "ptp:%d"
 	PartnersTourInsertQueue = "partners_tours_insert"
 	PartnersTourUpdateQueue = "partners_tours_update"
+	PartnersTourDeleteQueue = "partners_tours_delete"
 	PartnersTourUpdateMutexTemplate = "partners_update_%d"
 )
 

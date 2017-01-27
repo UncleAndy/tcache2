@@ -138,6 +138,17 @@ func IsEmptyQueue(queue string) bool {
 	return err != nil || lt_zero
 }
 
+func QueueSize(queue string) int64 {
+	QueueSizesUpdate(queue, &RedisSettings.MainServers)
+	size := 0
+	for _, server := range RedisSettings.MainServers {
+		server.QueueSizesMutex.Lock()
+		size = size + server.QueueSizes[queue]
+		server.QueueSizesMutex.Unlock()
+	}
+	return size
+}
+
 func CleanQueueBy(queue string, servers *[]RedisServer) {
 	for _, server := range *servers {
 		server.Connection.Del(queue)

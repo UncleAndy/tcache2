@@ -19,6 +19,7 @@ const (
 	MapTourPriceLogKeyTemplate = "mtl:%d"
 	MapTourInsertQueue = "map_tours_insert"
 	MapTourUpdateQueue = "map_tours_update"
+	MapTourDeleteQueue = "map_tours_delete"
 )
 
 var (
