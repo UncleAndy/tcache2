@@ -13,16 +13,14 @@ const (
 	MapTourInsertThreadQueueTemplate = "map_tours_insert_%d"
 	MapTourUpdateThreadQueueTemplate = "map_tours_update_%d"
 	MapTourDeleteThreadQueueTemplate = "map_tours_delete_%d"
-	MapTourFlushThreadDataCounter = "map_tours_flush_counter"
+	MapTourInsertThreadDataCounter = "map_tours_insert_counter"
+	MapTourUpdateThreadDataCounter = "map_tours_update_counter"
+	MapTourDeleteThreadDataCounter = "map_tours_delete_counter"
 )
 
 func (worker *MapToursDbWorker) Init() {
 	worker.LoadWorkerConfig()
 	worker.FinishChanel = make(chan bool)
-}
-
-func (worker *MapToursDbWorker) GetSettings() *worker_base.WorkerSettings {
-	return &worker.Settings
 }
 
 func (worker *MapToursDbWorker) WaitFinish() {
@@ -48,4 +46,8 @@ func  (worker *MapToursDbWorker) LoadWorkerConfig() {
 	if err != nil {
 		log.Error.Fatalf("error: %v", err)
 	}
+}
+
+func (worker *MapToursDbWorker) GetSettings() *worker_base.WorkerSettings {
+	return &worker.Settings
 }

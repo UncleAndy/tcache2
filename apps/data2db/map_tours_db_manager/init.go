@@ -13,11 +13,13 @@ func (worker *MapToursDbManager) Init() {
 	worker.LoadWorkerConfig(EnvWorkerFileConfig)
 	worker.FinishChanel = make(chan bool)
 
-	worker.TourFlushThreadDataCounter = map_tours_db_worker.MapTourFlushThreadDataCounter
 	worker.TourInsertQueue = map_tours.MapTourInsertQueue
 	worker.TourUpdateQueue = map_tours.MapTourUpdateQueue
 	worker.TourDeleteQueue = map_tours.MapTourDeleteQueue
 	worker.TourInsertThreadQueueTemplate = map_tours_db_worker.MapTourInsertThreadQueueTemplate
 	worker.TourUpdateThreadQueueTemplate = map_tours_db_worker.MapTourUpdateThreadQueueTemplate
 	worker.TourDeleteThreadQueueTemplate = map_tours_db_worker.MapTourDeleteThreadQueueTemplate
+	worker.TourInsertThreadDataCounter = map_tours_db_worker.MapTourInsertThreadDataCounter
+	worker.TourUpdateThreadDataCounter = map_tours_db_worker.MapTourUpdateThreadDataCounter
+	worker.TourDeleteThreadDataCounter = map_tours_db_worker.MapTourDeleteThreadDataCounter
 }

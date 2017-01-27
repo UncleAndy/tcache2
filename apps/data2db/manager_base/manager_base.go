@@ -1,8 +1,6 @@
 package manager_base
 
 import (
-	"github.com/uncleandy/tcache2/apps/data2db/map_tours_db_worker"
-	"github.com/uncleandy/tcache2/apps/workers/map_tours"
 	"github.com/uncleandy/tcache2/apps/workers/worker_base"
 	"github.com/uncleandy/tcache2/cache"
 	"github.com/uncleandy/tcache2/log"
@@ -45,7 +43,7 @@ func (worker *ManagerBase) ManagerLoop() {
 	update_queue_length := cache.QueueSize(worker.TourUpdateQueue)
 	delete_queue_length := cache.QueueSize(worker.TourDeleteQueue)
 
-	for i := 0; i < insert_queue_length; i++ {
+	for i := int64(0); i < insert_queue_length; i++ {
 		id_str, err := cache.GetQueue(worker.TourInsertQueue)
 		if err != nil {
 			log.Error.Print("Error get tour ID from insert queue:", err)
@@ -55,7 +53,7 @@ func (worker *ManagerBase) ManagerLoop() {
 	}
 	worker.ThreadsInsertDataFinished()
 
-	for i := 0; i < update_queue_length; i++ {
+	for i := int64(0); i < update_queue_length; i++ {
 		id_str, err := cache.GetQueue(worker.TourUpdateQueue)
 		if err != nil {
 			log.Error.Print("Error get tour ID from update queue:", err)
@@ -65,7 +63,7 @@ func (worker *ManagerBase) ManagerLoop() {
 	}
 	worker.ThreadsUpdateDataFinished()
 
-	for i := 0; i < delete_queue_length; i++ {
+	for i := int64(0); i < delete_queue_length; i++ {
 		id_str, err := cache.GetQueue(worker.TourDeleteQueue)
 		if err != nil {
 			log.Error.Print("Error get tour ID from delete queue:", err)
@@ -103,15 +101,15 @@ func (worker *ManagerBase) SendTourTo(id_str string, template string) {
 }
 
 func (worker *ManagerBase) ThreadsInsertDataFinished() {
-	cache.Set(0, worker.TourInsertThreadDataCounter, '0')
+	cache.Set(0, worker.TourInsertThreadDataCounter, "0")
 }
 
 func (worker *ManagerBase) ThreadsUpdateDataFinished() {
-	cache.Set(0, worker.TourUpdateThreadDataCounter, '0')
+	cache.Set(0, worker.TourUpdateThreadDataCounter, "0")
 }
 
 func (worker *ManagerBase) ThreadsDeleteDataFinished() {
-	cache.Set(0, worker.TourDeleteThreadDataCounter, '0')
+	cache.Set(0, worker.TourDeleteThreadDataCounter, "0")
 }
 
 func (worker *ManagerBase) WaitThreadsFlushData() {
@@ -138,7 +136,7 @@ func (worker *ManagerBase) ThreadsCounterFinished(counter_key string) bool {
 	if err != nil {
 		log.Error.Print("Error parse flush counter in manager:", err)
 	}
-	return counter >= worker.Settings.AllThreadsCount
+	return counter >= uint64(worker.Settings.AllThreadsCount)
 }
 
 func (worker *ManagerBase) WaitFinish() {
@@ -148,7 +146,7 @@ func (worker *ManagerBase) WaitFinish() {
 func  (worker *ManagerBase) LoadWorkerConfig(env_config_file_name string) {
 	config_file := os.Getenv(env_config_file_name)
 	if config_file == "" {
-		log.Error.Fatalf("Map tours worker config file name required (%s environment)", EnvWorkerFileConfig)
+		log.Error.Fatalf("Map tours worker config file name required (%s environment)", env_config_file_name)
 	}
 	_, err := os.Stat(config_file)
 	if os.IsNotExist(err) {

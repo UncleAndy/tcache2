@@ -140,7 +140,7 @@ func IsEmptyQueue(queue string) bool {
 
 func QueueSize(queue string) int64 {
 	QueueSizesUpdate(queue, &RedisSettings.MainServers)
-	size := 0
+	size := int64(0)
 	for _, server := range RedisSettings.MainServers {
 		server.QueueSizesMutex.Lock()
 		size = size + server.QueueSizes[queue]

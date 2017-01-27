@@ -6,7 +6,9 @@ const (
 	PartnersTourInsertThreadQueueTemplate = "partners_tours_insert_%d"
 	PartnersTourUpdateThreadQueueTemplate = "partners_tours_update_%d"
 	PartnersTourDeleteThreadQueueTemplate = "partners_tours_delete_%d"
-	PartnersTourFlushThreadDataCounter = "partners_tours_flush_counter"
+	PartnersTourInsertThreadDataCounter = "partners_tours_insert_counter"
+	PartnersTourUpdateThreadDataCounter = "partners_tours_update_counter"
+	PartnersTourDeleteThreadDataCounter = "partners_tours_delete_counter"
 )
 
 type PartnersToursDbWorker struct {
