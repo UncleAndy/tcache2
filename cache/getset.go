@@ -143,3 +143,9 @@ func SetID(key string, id uint64) (error) {
 	err := RedisSettings.MainServers[0].Connection.Set(key, strconv.FormatUint(id, 10), -1).Err()
 	return err
 }
+
+func Incr(shard_index uint64, key string) (uint64, error) {
+	main_server := main_shard_server(shard_index)
+	id, err := main_server.Connection.Incr(key).Result()
+	return uint64(id), err
+}

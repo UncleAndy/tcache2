@@ -7,6 +7,7 @@ import (
 	"github.com/uncleandy/tcache2/cache"
 	"time"
 	"github.com/hjr265/redsync.go/redsync"
+	"reflect"
 )
 
 const (
@@ -52,6 +53,43 @@ var (
 			"HotelIsInStop"		: 7,
 		},
 		RefIntFields	: map[string]int{},
+	}
+	TourMapSQLFields = DataSQLFields{
+		StringFields: map[string]string{
+			"UpdateDate":	"price_updated_at",
+			"Checkin":	"checkin",
+			"TourUrl":	"tour_url",
+			"RoomName":	"room_name",
+			"HtPlaceName":	"ht_place_name",
+			"CreateDate":	"created_at",
+		},
+		IntFields: map[string]string{
+			"SourceId":		"source_id",
+			"Price":                "price",
+			"CurrencyId":           "currency_id",
+			"Nights":               "nights",
+			"Adults":               "adults",
+			"Kids":                 "kids",
+			"HotelId":              "hotel_id",
+			"TownId":               "town_id",
+			"MealId":               "meal_id",
+			"TicketsIncluded":      "tickets_included",
+			"HasEconomTicketsDpt":  "has_econom_tickets_dpt",
+			"HasEconomTicketsRtn":  "has_econom_tickets_rtn",
+			"HotelIsInStop":        "hotel_is_in_stop",
+			"DptCityId":            "dpt_city_id",
+			"CountryId":            "country_id",
+			"PriceByr":             "price_byr",
+			"PriceEur":             "price_eur",
+			"PriceUsd":             "price_usd",
+			"FuelSurchargeMin":     "fuel_surcharge_min",
+			"FuelSurchargeMax":     "fuel_surcharge_max",
+		},
+		RefIntFields: map[string]string{
+			"Kid1Age":              "kid1age",
+			"Kid2Age":              "kid2age",
+			"Kid3Age":              "kid3age",
+		},
 	}
 )
 
@@ -147,6 +185,18 @@ func (t *TourMap) UpdateDateLaterThen(price_data_str string) (bool, error) {
 	}
 
 	return new_update_time.After(old_update_time), nil
+}
+
+func (t *TourBase) InsertSQLFieldsSet() string {
+	return t.InsertSQLFieldsSetBy(&TourMapSQLFields)
+}
+
+func (t *TourBase) InsertSQLDataSet() string {
+	return t.InsertSQLDataSetBy(&TourMapSQLFields)
+}
+
+func (t *TourBase) UpdateSQLString() string {
+	return t.UpdateSQLStringBy(&TourMapSQLFields)
 }
 
 func LockMapTourUpdate(id uint64) *redsync.Mutex {

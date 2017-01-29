@@ -69,6 +69,12 @@ type DataOrderFields struct {
 	RefIntFields	map[string]int
 }
 
+type DataSQLFields struct {
+	StringFields 	map[string]string
+	IntFields 	map[string]string
+	RefIntFields	map[string]string
+}
+
 type TourBase struct {
 	SourceId   		int    `xml:"sourceId,attr"`
 	UpdateDate 		string `xml:"updateDate,attr"`
@@ -205,6 +211,87 @@ func (t *TourBase) FieldsToString(fields_order *DataOrderFields ) string {
 	}
 
 	return strings.Join(fields_data, TourBaseDataSeparator)
+}
+
+
+func (t *TourBase) InsertSQLFieldsSetBy(fields_set *DataSQLFields) string {
+	result := ""
+	sep := ""
+
+	for _, db_field := range fields_set.IntFields {
+		result = result + sep + " " + db_field
+		sep = ","
+	}
+
+	for _, db_field := range fields_set.RefIntFields {
+		result = result + sep + " " + db_field
+		sep = ","
+	}
+
+	for _, db_field := range fields_set.StringFields {
+		result = result + sep + " " + db_field
+		sep = ","
+	}
+
+	return result
+}
+
+func (t *TourBase) InsertSQLDataSetBy(fields_set *DataSQLFields) string {
+	result := ""
+	sep := ""
+
+	for field, _ := range fields_set.IntFields {
+		value := reflect.ValueOf(t).Elem().FieldByName(field).Int()
+		result = result + sep + " " + strconv.FormatUint(value, 10)
+		sep = ","
+	}
+
+	for field, _ := range fields_set.RefIntFields {
+		elem := reflect.ValueOf(t).Elem().FieldByName(field)
+		value := "-1"
+		if !elem.IsNil() {
+			value = strconv.FormatInt(elem.Elem().Int(), 10)
+		}
+		result = result + sep + " " + value
+		sep = ","
+	}
+
+	for field, _ := range fields_set.StringFields {
+		value := reflect.ValueOf(t).Elem().FieldByName(field).String()
+		result = result + sep + " \"" + value + "\""
+		sep = ","
+	}
+
+	return result
+}
+
+func (t *TourBase) UpdateSQLStringBy(fields_set *DataSQLFields) string {
+	result := ""
+	sep := ""
+
+	for field, db_field := range fields_set.IntFields {
+		value := reflect.ValueOf(t).Elem().FieldByName(field).Int()
+		result = result + sep + " " + db_field + " = " + strconv.FormatUint(value, 10)
+		sep = ","
+	}
+
+	for field, db_field := range fields_set.RefIntFields {
+		elem := reflect.ValueOf(t).Elem().FieldByName(field)
+		value := "-1"
+		if !elem.IsNil() {
+			value = strconv.FormatInt(elem.Elem().Int(), 10)
+		}
+		result = result + sep + " " + db_field + " = " + value
+		sep = ","
+	}
+
+	for field, db_field := range fields_set.StringFields {
+		value := reflect.ValueOf(t).Elem().FieldByName(field).String()
+		result = result + sep + " " + db_field + " = \"" + value + "\""
+		sep = ","
+	}
+
+	return result
 }
 
 func TourEscaped(source string, symbol string, code string) string {
