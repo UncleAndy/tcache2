@@ -3,7 +3,6 @@ package map_tours_db_worker
 import (
 	"github.com/uncleandy/tcache2/cache"
 	"fmt"
-	"gopkg.in/redis.v4"
 	"strconv"
 	"github.com/uncleandy/tcache2/log"
 	"github.com/uncleandy/tcache2/apps/workers/map_tours"
@@ -39,110 +38,33 @@ func (worker *MapToursDbWorker) Thread(thread_index int) {
 }
 
 func (worker *MapToursDbWorker) InsertProcess(thread_index int) {
-	insert_queue := fmt.Sprintf(MapTourInsertThreadQueueTemplate, thread_index)
-	insert_tours := make([]tours.TourMap, MapToursInsertBatchSize)
-	insert_tours_index := 0
-	for {
-		id_str, err := cache.GetQueue(insert_queue)
-
-		// Check finish loop
-		if err == redis.Nil {
-			_, err := cache.Get(0, MapTourInsertThreadDataCounter)
-			if err != redis.Nil {
-				// Flush data if present
-				if insert_tours_index > 0 {
-					worker.InsertToursFlush(&insert_tours, insert_tours_index)
-				}
-
-				cache.Incr(0, MapTourInsertThreadDataCounter)
-				break
-			}
-		}
-
-		tour, err := worker.ReadTour(id_str)
-		if err != nil {
-			continue
-		}
-
-		insert_tours[insert_tours_index] = tour
-		insert_tours_index++
-		if insert_tours_index >= MapToursInsertBatchSize {
-			worker.InsertToursFlush(&insert_tours, insert_tours_index)
-			insert_tours_index = 0
-		}
-	}
+	worker.InsertProcessBy(
+		thread_index,
+		MapToursInsertBatchSize,
+		MapTourInsertThreadQueueTemplate,
+		MapTourInsertThreadDataCounter,
+	)
 }
 
 func (worker *MapToursDbWorker) UpdateProcess(thread_index int) {
-	update_queue := fmt.Sprintf(MapTourUpdateThreadQueueTemplate, thread_index)
-	update_tours := make([]tours.TourMap, MapToursUpdateBatchSize)
-	update_tours_index := 0
-	for {
-		id_str, err := cache.GetQueue(update_queue)
-
-		// Check finish loop
-		if err == redis.Nil {
-			_, err := cache.Get(0, MapTourUpdateThreadDataCounter)
-			if err != redis.Nil {
-				// Flush data if present
-				if update_tours_index > 0 {
-					worker.UpdateToursFlush(&update_tours, update_tours_index)
-				}
-
-				cache.Incr(0, MapTourUpdateThreadDataCounter)
-				break
-			}
-		}
-
-		tour, err := worker.ReadTour(id_str)
-		if err != nil {
-			continue
-		}
-
-		update_tours[update_tours_index] = tour
-		update_tours_index++
-		if update_tours_index >= MapToursUpdateBatchSize {
-			worker.UpdateToursFlush(&update_tours, update_tours_index)
-			update_tours_index = 0
-		}
-	}
+	worker.UpdateProcessBy(
+		thread_index,
+		MapToursUpdateBatchSize,
+		MapTourUpdateThreadQueueTemplate,
+		MapTourUpdateThreadDataCounter,
+	)
 }
 
 func (worker *MapToursDbWorker) DeleteProcess(thread_index int) {
-	delete_queue := fmt.Sprintf(MapTourDeleteThreadQueueTemplate, thread_index)
-	delete_tours := make([]string, MapToursDeleteBatchSize)
-	delete_tours_index := 0
-	for {
-		id_str, err := cache.GetQueue(delete_queue)
-
-		// Check finish loop
-		if err == redis.Nil {
-			_, err := cache.Get(0, MapTourDeleteThreadDataCounter)
-			if err != redis.Nil {
-				// Flush data if present
-				if delete_tours_index > 0 {
-					worker.DeleteToursFlush(&delete_tours, delete_tours_index)
-				}
-
-				cache.Incr(0, MapTourUpdateThreadDataCounter)
-				break
-			}
-		}
-
-		if id_str == "" {
-			continue
-		}
-
-		delete_tours[delete_tours_index] = id_str
-		delete_tours_index++
-		if delete_tours_index >= MapToursUpdateBatchSize {
-			worker.DeleteToursFlush(&delete_tours, delete_tours_index)
-			delete_tours_index = 0
-		}
-	}
+	worker.DeleteProcessBy(
+		thread_index,
+		MapToursDeleteBatchSize,
+		MapTourDeleteThreadQueueTemplate,
+		MapTourDeleteThreadDataCounter,
+	)
 }
 
-func (worker *MapToursDbWorker) ReadTour(id_str string) (tours.TourMap, error) {
+func (worker *MapToursDbWorker) ReadTour(id_str string) (tours.TourInterface, error) {
 	id, err := strconv.ParseUint(id_str, 10, 64)
 	if err != nil {
 		log.Error.Print("Error parse uint64 for id:", id_str)
@@ -180,7 +102,7 @@ func (worker *MapToursDbWorker) ReadTour(id_str string) (tours.TourMap, error) {
 	return tour, nil
 }
 
-func (worker *MapToursDbWorker) InsertToursFlush(tours *[]tours.TourMap, size int) {
+func (worker *MapToursDbWorker) InsertToursFlush(tours *[]tours.TourInterface, size int) {
 	// Insert tours to DB
 	first_tour := (*tours)[0]
 	insert_fields_sql := first_tour.InsertSQLFieldsSet()
@@ -199,7 +121,7 @@ func (worker *MapToursDbWorker) InsertToursFlush(tours *[]tours.TourMap, size in
 	}
 }
 
-func (worker *MapToursDbWorker) UpdateToursFlush(tours *[]tours.TourMap, size int) {
+func (worker *MapToursDbWorker) UpdateToursFlush(tours *[]tours.TourInterface, size int) {
 	trx, err := db.StartTransaction()
 	if err != nil {
 		log.Error.Print("WARNING! Error update map tours start transaction: ", err)

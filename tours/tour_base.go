@@ -135,6 +135,9 @@ type TourInterface interface {
 	PriceData() string
 	KeyDataCRC32() uint64
 	GenId() int64
+	InsertSQLFieldsSet() string
+	InsertSQLDataSet() string
+	UpdateSQLString() string
 }
 
 func (t *TourBase) ToString() string {
@@ -215,7 +218,7 @@ func (t *TourBase) FieldsToString(fields_order *DataOrderFields ) string {
 	return strings.Join(fields_data, TourBaseDataSeparator)
 }
 
-
+// TODO: Tests
 func (t *TourBase) InsertSQLFieldsSetBy(fields_set *DataSQLFields) string {
 	result := ""
 	sep := ""
@@ -243,6 +246,7 @@ func (t *TourBase) InsertSQLFieldsSetBy(fields_set *DataSQLFields) string {
 	return result
 }
 
+// TODO: Tests
 func (t *TourBase) InsertSQLDataSetBy(fields_set *DataSQLFields) string {
 	result := ""
 	sep := ""
@@ -270,6 +274,7 @@ func (t *TourBase) InsertSQLDataSetBy(fields_set *DataSQLFields) string {
 
 	for field, _ := range fields_set.StringFields {
 		value := reflect.ValueOf(t).Elem().FieldByName(field).String()
+		// TODO: String " escape
 		result = result + sep + " \"" + value + "\""
 		sep = ","
 	}
@@ -277,6 +282,7 @@ func (t *TourBase) InsertSQLDataSetBy(fields_set *DataSQLFields) string {
 	return result
 }
 
+// TODO: Tests
 func (t *TourBase) UpdateSQLStringBy(fields_set *DataSQLFields) string {
 	result := ""
 	sep := ""
@@ -299,6 +305,7 @@ func (t *TourBase) UpdateSQLStringBy(fields_set *DataSQLFields) string {
 
 	for field, db_field := range fields_set.StringFields {
 		value := reflect.ValueOf(t).Elem().FieldByName(field).String()
+		// TODO: String " escape
 		result = result + sep + " " + db_field + " = \"" + value + "\""
 		sep = ","
 	}

@@ -138,6 +138,7 @@ func IsEmptyQueue(queue string) bool {
 	return err != nil || lt_zero
 }
 
+// TODO: Tests
 func QueueSize(queue string) int64 {
 	QueueSizesUpdate(queue, &RedisSettings.MainServers)
 	size := int64(0)

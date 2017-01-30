@@ -3,7 +3,6 @@ package partners_tours_db_worker
 import (
 	"github.com/uncleandy/tcache2/cache"
 	"fmt"
-	"gopkg.in/redis.v4"
 	"strconv"
 	"github.com/uncleandy/tcache2/log"
 	"github.com/uncleandy/tcache2/tours"
@@ -39,110 +38,33 @@ func (worker *PartnersToursDbWorker) Thread(thread_index int) {
 }
 
 func (worker *PartnersToursDbWorker) InsertProcess(thread_index int) {
-	insert_queue := fmt.Sprintf(PartnersTourInsertThreadQueueTemplate, thread_index)
-	insert_tours := make([]tours.TourPartners, PartnersToursInsertBatchSize)
-	insert_tours_index := 0
-	for {
-		id_str, err := cache.GetQueue(insert_queue)
-
-		// Check finish loop
-		if err == redis.Nil {
-			_, err := cache.Get(0, PartnersTourInsertThreadDataCounter)
-			if err != redis.Nil {
-				// Flush data if present
-				if insert_tours_index > 0 {
-					worker.InsertToursFlush(&insert_tours, insert_tours_index)
-				}
-
-				cache.Incr(0, PartnersTourInsertThreadDataCounter)
-				break
-			}
-		}
-
-		tour, err := worker.ReadTour(id_str)
-		if err != nil {
-			continue
-		}
-
-		insert_tours[insert_tours_index] = tour
-		insert_tours_index++
-		if insert_tours_index >= PartnersToursInsertBatchSize {
-			worker.InsertToursFlush(&insert_tours, insert_tours_index)
-			insert_tours_index = 0
-		}
-	}
+	worker.InsertProcessBy(
+		thread_index,
+		PartnersToursInsertBatchSize,
+		PartnersTourInsertThreadQueueTemplate,
+		PartnersTourInsertThreadDataCounter,
+	)
 }
 
 func (worker *PartnersToursDbWorker) UpdateProcess(thread_index int) {
-	update_queue := fmt.Sprintf(PartnersTourUpdateThreadQueueTemplate, thread_index)
-	update_tours := make([]tours.TourPartners, PartnersToursUpdateBatchSize)
-	update_tours_index := 0
-	for {
-		id_str, err := cache.GetQueue(update_queue)
-
-		// Check finish loop
-		if err == redis.Nil {
-			_, err := cache.Get(0, PartnersTourUpdateThreadDataCounter)
-			if err != redis.Nil {
-				// Flush data if present
-				if update_tours_index > 0 {
-					worker.UpdateToursFlush(&update_tours, update_tours_index)
-				}
-
-				cache.Incr(0, PartnersTourUpdateThreadDataCounter)
-				break
-			}
-		}
-
-		tour, err := worker.ReadTour(id_str)
-		if err != nil {
-			continue
-		}
-
-		update_tours[update_tours_index] = tour
-		update_tours_index++
-		if update_tours_index >= PartnersToursUpdateBatchSize {
-			worker.UpdateToursFlush(&update_tours, update_tours_index)
-			update_tours_index = 0
-		}
-	}
+	worker.UpdateProcessBy(
+		thread_index,
+		PartnersToursUpdateBatchSize,
+		PartnersTourUpdateThreadQueueTemplate,
+		PartnersTourUpdateThreadDataCounter,
+	)
 }
 
 func (worker *PartnersToursDbWorker) DeleteProcess(thread_index int) {
-	delete_queue := fmt.Sprintf(PartnersTourDeleteThreadQueueTemplate, thread_index)
-	delete_tours := make([]string, PartnersToursDeleteBatchSize)
-	delete_tours_index := 0
-	for {
-		id_str, err := cache.GetQueue(delete_queue)
-
-		// Check finish loop
-		if err == redis.Nil {
-			_, err := cache.Get(0, PartnersTourDeleteThreadDataCounter)
-			if err != redis.Nil {
-				// Flush data if present
-				if delete_tours_index > 0 {
-					worker.DeleteToursFlush(&delete_tours, delete_tours_index)
-				}
-
-				cache.Incr(0, PartnersTourUpdateThreadDataCounter)
-				break
-			}
-		}
-
-		if id_str == "" {
-			continue
-		}
-
-		delete_tours[delete_tours_index] = id_str
-		delete_tours_index++
-		if delete_tours_index >= PartnersToursUpdateBatchSize {
-			worker.DeleteToursFlush(&delete_tours, delete_tours_index)
-			delete_tours_index = 0
-		}
-	}
+	worker.DeleteProcessBy(
+		thread_index,
+		PartnersToursDeleteBatchSize,
+		PartnersTourDeleteThreadQueueTemplate,
+		PartnersTourDeleteThreadDataCounter,
+	)
 }
 
-func (worker *PartnersToursDbWorker) ReadTour(id_str string) (tours.TourPartners, error) {
+func (worker *PartnersToursDbWorker) ReadTour(id_str string) (tours.TourInterface, error) {
 	id, err := strconv.ParseUint(id_str, 10, 64)
 	if err != nil {
 		log.Error.Print("Error parse uint64 for id:", id_str)
@@ -180,7 +102,7 @@ func (worker *PartnersToursDbWorker) ReadTour(id_str string) (tours.TourPartners
 	return tour, nil
 }
 
-func (worker *PartnersToursDbWorker) InsertToursFlush(tours *[]tours.TourPartners, size int) {
+func (worker *PartnersToursDbWorker) InsertToursFlush(tours *[]tours.TourInterface, size int) {
 	// Insert tours to DB
 	first_tour := (*tours)[0]
 	insert_fields_sql := first_tour.InsertSQLFieldsSet()
@@ -199,7 +121,7 @@ func (worker *PartnersToursDbWorker) InsertToursFlush(tours *[]tours.TourPartner
 	}
 }
 
-func (worker *PartnersToursDbWorker) UpdateToursFlush(tours *[]tours.TourPartners, size int) {
+func (worker *PartnersToursDbWorker) UpdateToursFlush(tours *[]tours.TourInterface, size int) {
 	trx, err := db.StartTransaction()
 	if err != nil {
 		log.Error.Print("WARNING! Error update partners tours start transaction: ", err)

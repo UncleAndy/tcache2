@@ -34,6 +34,7 @@ type ManagerBase struct {
 	TourDeleteThreadDataCounter string
 }
 
+// TODO: Tests
 func (worker *ManagerBase) ManagerLoop() {
 	cache.Del(0, worker.TourInsertThreadDataCounter)
 	cache.Del(0, worker.TourUpdateThreadDataCounter)
