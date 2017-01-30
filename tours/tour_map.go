@@ -7,7 +7,6 @@ import (
 	"github.com/uncleandy/tcache2/cache"
 	"time"
 	"github.com/hjr265/redsync.go/redsync"
-	"reflect"
 )
 
 const (
@@ -55,6 +54,7 @@ var (
 		RefIntFields	: map[string]int{},
 	}
 	TourMapSQLFields = DataSQLFields{
+		IdSQLField: 	"id",
 		StringFields: map[string]string{
 			"UpdateDate":	"price_updated_at",
 			"Checkin":	"checkin",
@@ -62,6 +62,10 @@ var (
 			"RoomName":	"room_name",
 			"HtPlaceName":	"ht_place_name",
 			"CreateDate":	"created_at",
+			"TicketsIncluded":      "tickets_included",
+			"HasEconomTicketsDpt":  "has_econom_tickets_dpt",
+			"HasEconomTicketsRtn":  "has_econom_tickets_rtn",
+			"HotelIsInStop":        "hotel_is_in_stop",
 		},
 		IntFields: map[string]string{
 			"SourceId":		"source_id",
@@ -73,10 +77,6 @@ var (
 			"HotelId":              "hotel_id",
 			"TownId":               "town_id",
 			"MealId":               "meal_id",
-			"TicketsIncluded":      "tickets_included",
-			"HasEconomTicketsDpt":  "has_econom_tickets_dpt",
-			"HasEconomTicketsRtn":  "has_econom_tickets_rtn",
-			"HotelIsInStop":        "hotel_is_in_stop",
 			"DptCityId":            "dpt_city_id",
 			"CountryId":            "country_id",
 			"PriceByr":             "price_byr",
@@ -98,34 +98,7 @@ type TourMap struct {
 }
 
 func (t *TourMap) KeyData() string {
-	kid1age := -1
-	if t.Kid1Age != nil {
-		kid1age = *(t.Kid1Age)
-	}
-
-	kid2age := -1
-	if t.Kid2Age != nil {
-		kid2age = *(t.Kid2Age)
-	}
-
-	kid3age := -1
-	if t.Kid3Age != nil {
-		kid3age = *(t.Kid3Age)
-	}
-
-	key_data := []string{
-		strconv.Itoa(t.HotelId),
-		t.Checkin,
-		strconv.Itoa(t.DptCityId),
-		strconv.Itoa(t.Nights),
-		strconv.Itoa(t.Adults),
-		strconv.Itoa(t.MealId),
-		strconv.Itoa(t.Kids),
-		strconv.Itoa(kid1age),
-		strconv.Itoa(kid2age),
-		strconv.Itoa(kid3age),
-	}
-	return strings.Join(key_data, TourMapKeyDataSeparator)
+	return t.FieldsToString(&TourMapKeyDataFields)
 }
 
 func (t *TourMap) FromKeyData(key_data string) error {
@@ -133,20 +106,7 @@ func (t *TourMap) FromKeyData(key_data string) error {
 }
 
 func (t *TourMap) PriceData() string {
-	price_data := []string{
-		strconv.Itoa(t.Price),
-		t.UpdateDate,
-		strconv.Itoa(t.FuelSurchargeMin),
-		strconv.Itoa(t.FuelSurchargeMax),
-		strconv.Itoa(t.TicketsIncluded),
-		strconv.Itoa(t.HasEconomTicketsDpt),
-		strconv.Itoa(t.HasEconomTicketsRtn),
-		strconv.Itoa(t.HotelIsInStop),
-		TourEscaped(t.RoomName, TourMapKeyDataSeparator, TourMapKeyDataSeparatorCode),
-		TourEscaped(t.HtPlaceName, TourMapKeyDataSeparator, TourMapKeyDataSeparatorCode),
-		TourEscaped(t.TourUrl, TourMapKeyDataSeparator, TourMapKeyDataSeparatorCode),
-	}
-	return strings.Join(price_data, TourMapKeyDataSeparator)
+	return t.FieldsToString(&TourMapPriceDataFields)
 }
 
 func (t *TourMap) FromPriceData(price_data string) error {
@@ -159,7 +119,9 @@ func (t *TourMap) KeyDataCRC32() uint64 {
 }
 
 func (t *TourMap) GenId() (uint64, error) {
-	return cache.NewID(TourMapRedisGenIdKey)
+	var err error
+	t.Id, err = cache.NewID(TourMapRedisGenIdKey)
+	return t.Id, err
 }
 
 func (t *TourMap) PriceBiggerThen(price_data_str string) (bool, error) {

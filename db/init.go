@@ -122,3 +122,21 @@ func IsInListInt(list []int, id int) bool {
 func SendQuery(query string, params ...interface{}) (*sql.Rows, error) {
 	return db.Query(query, params)
 }
+
+func SendQueryParamsTrx(txn *sql.Tx, query string, params ...interface{}) error {
+	stmt, err := txn.Prepare(query)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(params...)
+	if err != nil {
+		return err
+	}
+
+	if err = stmt.Close(); err != nil {
+		return err
+	}
+
+	return nil
+}

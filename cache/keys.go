@@ -17,10 +17,9 @@ type KeysScanner struct {
 	Finished bool
 }
 
-
 func (k *KeysScanner) Init(template string, count int64) {
 	k.Template = template
-	k.Count = count
+	k.Count = count - 1
 	k.ServerIndex = 0
 	k.Finished = false
 }

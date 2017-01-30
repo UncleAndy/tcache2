@@ -28,6 +28,7 @@ func TestRedisKeysScan(t *testing.T) {
 		keys_list := scanner.Next()
 
 		if int64(len(keys_list)) > max_list_size {
+			fmt.Printf("List keys: %+v", keys_list)
 			t.Error(
 				"Wrong KeyScanner Next results list size. Expected < ", max_list_size,
 				", got", len(keys_list))

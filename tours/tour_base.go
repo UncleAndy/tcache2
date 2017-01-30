@@ -70,12 +70,14 @@ type DataOrderFields struct {
 }
 
 type DataSQLFields struct {
+	IdSQLField	string
 	StringFields 	map[string]string
 	IntFields 	map[string]string
 	RefIntFields	map[string]string
 }
 
 type TourBase struct {
+	Id 			uint64
 	SourceId   		int    `xml:"sourceId,attr"`
 	UpdateDate 		string `xml:"updateDate,attr"`
 	Price      		int    `xml:"price,attr"`
@@ -218,6 +220,11 @@ func (t *TourBase) InsertSQLFieldsSetBy(fields_set *DataSQLFields) string {
 	result := ""
 	sep := ""
 
+	if fields_set.IdSQLField != "" {
+		result = fields_set.IdSQLField
+		sep = ","
+	}
+
 	for _, db_field := range fields_set.IntFields {
 		result = result + sep + " " + db_field
 		sep = ","
@@ -240,9 +247,14 @@ func (t *TourBase) InsertSQLDataSetBy(fields_set *DataSQLFields) string {
 	result := ""
 	sep := ""
 
+	if fields_set.IdSQLField != "" {
+		result = strconv.FormatUint(t.Id, 10)
+		sep = ","
+	}
+
 	for field, _ := range fields_set.IntFields {
 		value := reflect.ValueOf(t).Elem().FieldByName(field).Int()
-		result = result + sep + " " + strconv.FormatUint(value, 10)
+		result = result + sep + " " + strconv.FormatInt(value, 10)
 		sep = ","
 	}
 
@@ -271,7 +283,7 @@ func (t *TourBase) UpdateSQLStringBy(fields_set *DataSQLFields) string {
 
 	for field, db_field := range fields_set.IntFields {
 		value := reflect.ValueOf(t).Elem().FieldByName(field).Int()
-		result = result + sep + " " + db_field + " = " + strconv.FormatUint(value, 10)
+		result = result + sep + " " + db_field + " = " + strconv.FormatInt(value, 10)
 		sep = ","
 	}
 

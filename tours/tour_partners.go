@@ -18,67 +18,103 @@ type TourPartners struct {
 	TourBase
 }
 
+var (
+	TourPartnersKeyDataFields = DataOrderFields{
+		StringFields	: map[string]int{
+			"Checkin"	: 4,
+		},
+		IntFields	: map[string]int{
+			"SourceId"	: 0,
+			"CountryId"	: 1,
+			"TownId"	: 2,
+			"Adults"	: 3,
+			"Nights"	: 5,
+			"Kids"		: 6,
+			"DptCityId"	: 10,
+		},
+		RefIntFields	: map[string]int{
+			"Kid1Age"	: 7,
+			"Kid2Age"	: 8,
+			"Kid3Age"	: 9,
+		},
+	}
+	TourPartnersPriceDataFields = DataOrderFields{
+		StringFields	: map[string]int{
+			"UpdateDate"		: 1,
+			"MealName"		: 16,
+			"RoomName"		: 17,
+			"HtPlaceName"		: 18,
+			"TourUrl"		: 19,
+			"ReceivingParty"	: 20,
+			"Description"		: 21,
+		},
+		IntFields	: map[string]int{
+			"Price"			: 0,
+			"FuelSurchargeMin"	: 2,
+			"FuelSurchargeMax"	: 3,
+			"TicketsIncluded"	: 4,
+			"HasEconomTicketsDpt"	: 5,
+			"HasEconomTicketsRtn"	: 6,
+			"HotelIsInStop"		: 7,
+			"FewEconomTicketsDpt"	: 8,
+			"FewEconomTicketsRtn"	: 9,
+			"FewPlacesInHotel"	: 10,
+			"Flags"			: 11,
+			"HotelId"		: 12,
+			"MealId"		: 13,
+			"RequestId"		: 14,
+			"OfferId"		: 15,
+		},
+		RefIntFields	: map[string]int{},
+	}
+	TourPartnersSQLFields = DataSQLFields{
+		IdSQLField: 	"id",
+		StringFields: map[string]string{
+			"Checkin"		: "checkin",
+			"TicketsIncluded"	: "tickets_included",
+			"HasEconomTicketsDpt"	: "has_econom_tickets_dpt",
+			"HasEconomTicketsRtn"	: "has_econom_tickets_rtn",
+			"HotelIsInStop"		: "hotel_is_in_stop",
+			"RequestId"		: "sletat_request_id",
+			"OfferId"		: "sletat_offer_id",
+			"FewEconomTicketsDpt"	: "few_econom_tickets_dpt",
+			"FewEconomTicketsRtn"	: "few_econom_tickets_rtn",
+			"FewPlacesInHotel"	: "few_places_in_hotel",
+			"Description"		: "description",
+			"TourUrl"		: "tour_url",
+			"RoomName"		: "room_name",
+			"ReceivingParty"	: "receiving_party",
+			"UpdateDate"		: "update_date",
+			"CreateDate"		: "created_at",
+			"MealName"		: "meal_name",
+			"HtPlaceName"		: "ht_place_name",
+		},
+		IntFields: map[string]string{
+			"Nights"		: "nights",
+			"Adults"		: "adulst",
+			"Kids"			: "kids",
+			"DptCityId"		: "dpt_city_id",
+			"TownId"		: "town_id",
+			"SourceId"		: "operator_id",
+			"Price"			: "price",
+			"HotelId"		: "hotel_id",
+			"Flags"			: "flags",
+			"MealId"		: "meal_id",
+		},
+		RefIntFields: map[string]string{
+			"Kid1Age":              "kid1age",
+			"Kid2Age":              "kid2age",
+			"Kid3Age":              "kid3age",
+		},
+	}
+)
+
 func (t *TourPartners) KeyData() string {
-	kid1age := -1
-	if t.Kid1Age != nil {
-		kid1age = *(t.Kid1Age)
-	}
-
-	kid2age := -1
-	if t.Kid2Age != nil {
-		kid2age = *(t.Kid2Age)
-	}
-
-	kid3age := -1
-	if t.Kid3Age != nil {
-		kid3age = *(t.Kid3Age)
-	}
-
-	key_data := []string{
-		strconv.Itoa(t.SourceId),
-		strconv.Itoa(t.CountryId),
-		strconv.Itoa(t.TownId),
-		strconv.Itoa(t.Adults),
-		t.Checkin,
-		strconv.Itoa(t.Nights),
-		strconv.Itoa(t.Kids),
-		strconv.Itoa(kid1age),
-		strconv.Itoa(kid2age),
-		strconv.Itoa(kid3age),
-		strconv.Itoa(t.DptCityId),
-	}
-	return strings.Join(key_data, TourPartnersKeyDataSeparator)
+	return t.FieldsToString(&TourPartnersKeyDataFields)
 }
 
 func (t *TourPartners) PriceData() string {
-	price_data := []string{
-		strconv.Itoa(t.Price),
-		t.UpdateDate,
-		strconv.Itoa(t.FuelSurchargeMin),
-		strconv.Itoa(t.FuelSurchargeMax),
-		strconv.Itoa(t.TicketsIncluded),
-		strconv.Itoa(t.HasEconomTicketsDpt),
-		strconv.Itoa(t.HasEconomTicketsRtn),
-		strconv.Itoa(t.HotelIsInStop),
-
-		strconv.Itoa(t.FewEconomTicketsDpt),
-		strconv.Itoa(t.FewEconomTicketsRtn),
-		strconv.Itoa(t.FewPlacesInHotel),
-		strconv.FormatInt(t.Flags, 10),
-
-		strconv.Itoa(t.HotelId),
-		strconv.Itoa(t.MealId),
-		strconv.Itoa(t.RequestId),
-		strconv.FormatInt(t.OfferId, 10),
-
-		TourEscaped(t.MealName,TourPartnersKeyDataSeparator, TourPartnersKeyDataSeparatorCode),
-		TourEscaped(t.RoomName, TourPartnersKeyDataSeparator, TourPartnersKeyDataSeparatorCode),
-		TourEscaped(t.HtPlaceName, TourPartnersKeyDataSeparator, TourPartnersKeyDataSeparatorCode),
-		TourEscaped(t.TourUrl, TourPartnersKeyDataSeparator, TourPartnersKeyDataSeparatorCode),
-		TourEscaped(t.Description, TourPartnersKeyDataSeparator, TourPartnersKeyDataSeparatorCode),
-		TourEscaped(t.ReceivingParty, TourPartnersKeyDataSeparator, TourPartnersKeyDataSeparatorCode),
-	}
-	return strings.Join(price_data, TourPartnersKeyDataSeparator)
+	return t.FieldsToString(&TourPartnersPriceDataFields)
 }
 
 func (t *TourPartners) KeyDataCRC32() uint64 {
@@ -114,4 +150,24 @@ func (t *TourPartners) UpdateDateLaterThen(price_data_str string) (bool, error) 
 	}
 
 	return new_update_time.After(old_update_time), nil
+}
+
+func (t *TourPartners) FromKeyData(key_data string) error {
+	return t.FieldsFromString(key_data, &TourPartnersKeyDataFields)
+}
+
+func (t *TourPartners) FromPriceData(price_data string) error {
+	return t.FieldsFromString(price_data, &TourPartnersPriceDataFields)
+}
+
+func (t *TourPartners) InsertSQLFieldsSet() string {
+	return t.InsertSQLFieldsSetBy(&TourPartnersSQLFields)
+}
+
+func (t *TourPartners) InsertSQLDataSet() string {
+	return t.InsertSQLDataSetBy(&TourPartnersSQLFields)
+}
+
+func (t *TourPartners) UpdateSQLString() string {
+	return t.UpdateSQLStringBy(&TourPartnersSQLFields)
 }
