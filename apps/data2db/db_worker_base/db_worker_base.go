@@ -15,6 +15,16 @@ type DbWorkerBase struct {
 	FinishChanel chan bool
 }
 
+type DbWorkerBaseInterface interface {
+	ReadTour(id_str string) (tours.TourInterface, error)
+	InsertProcessBy(thread_index int, batch_size int, queue_template string, thread_flag_key string)
+	UpdateProcessBy(thread_index int, batch_size int, queue_template string, thread_flag_key string)
+	DeleteProcessBy(thread_index int, batch_size int, queue_template string, thread_flag_key string)
+	InsertToursFlush(tours *[]tours.TourInterface, size int)
+	UpdateToursFlush(tours *[]tours.TourInterface, size int)
+	DeleteToursFlush(tours *[]string, size int)
+}
+
 func (worker *DbWorkerBase) InsertProcessBy(thread_index int, batch_size int, queue_template string, thread_flag_key string) {
 	insert_queue := fmt.Sprintf(queue_template, thread_index)
 	insert_tours := make([]tours.TourInterface, batch_size)

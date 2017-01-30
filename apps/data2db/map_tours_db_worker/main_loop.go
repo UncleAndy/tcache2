@@ -9,6 +9,7 @@ import (
 	"github.com/uncleandy/tcache2/tours"
 	"github.com/uncleandy/tcache2/db"
 	"strings"
+	"github.com/uncleandy/tcache2/apps/data2db/db_worker_base"
 )
 
 const (
@@ -38,7 +39,7 @@ func (worker *MapToursDbWorker) Thread(thread_index int) {
 }
 
 func (worker *MapToursDbWorker) InsertProcess(thread_index int) {
-	worker.InsertProcessBy(
+	db_worker_base.DbWorkerBaseInterface(worker).InsertProcessBy(
 		thread_index,
 		MapToursInsertBatchSize,
 		MapTourInsertThreadQueueTemplate,
@@ -47,7 +48,7 @@ func (worker *MapToursDbWorker) InsertProcess(thread_index int) {
 }
 
 func (worker *MapToursDbWorker) UpdateProcess(thread_index int) {
-	worker.UpdateProcessBy(
+	db_worker_base.DbWorkerBaseInterface(worker).UpdateProcessBy(
 		thread_index,
 		MapToursUpdateBatchSize,
 		MapTourUpdateThreadQueueTemplate,
@@ -56,7 +57,7 @@ func (worker *MapToursDbWorker) UpdateProcess(thread_index int) {
 }
 
 func (worker *MapToursDbWorker) DeleteProcess(thread_index int) {
-	worker.DeleteProcessBy(
+	db_worker_base.DbWorkerBaseInterface(worker).DeleteProcessBy(
 		thread_index,
 		MapToursDeleteBatchSize,
 		MapTourDeleteThreadQueueTemplate,

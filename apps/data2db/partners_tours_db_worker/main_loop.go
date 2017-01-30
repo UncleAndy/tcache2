@@ -9,6 +9,7 @@ import (
 	"github.com/uncleandy/tcache2/db"
 	"strings"
 	"github.com/uncleandy/tcache2/apps/workers/partners_tours"
+	"github.com/uncleandy/tcache2/apps/data2db/db_worker_base"
 )
 
 const (
@@ -38,7 +39,7 @@ func (worker *PartnersToursDbWorker) Thread(thread_index int) {
 }
 
 func (worker *PartnersToursDbWorker) InsertProcess(thread_index int) {
-	worker.InsertProcessBy(
+	db_worker_base.DbWorkerBaseInterface(worker).InsertProcessBy(
 		thread_index,
 		PartnersToursInsertBatchSize,
 		PartnersTourInsertThreadQueueTemplate,
@@ -47,7 +48,7 @@ func (worker *PartnersToursDbWorker) InsertProcess(thread_index int) {
 }
 
 func (worker *PartnersToursDbWorker) UpdateProcess(thread_index int) {
-	worker.UpdateProcessBy(
+	db_worker_base.DbWorkerBaseInterface(worker).UpdateProcessBy(
 		thread_index,
 		PartnersToursUpdateBatchSize,
 		PartnersTourUpdateThreadQueueTemplate,
@@ -56,7 +57,7 @@ func (worker *PartnersToursDbWorker) UpdateProcess(thread_index int) {
 }
 
 func (worker *PartnersToursDbWorker) DeleteProcess(thread_index int) {
-	worker.DeleteProcessBy(
+	db_worker_base.DbWorkerBaseInterface(worker).DeleteProcessBy(
 		thread_index,
 		PartnersToursDeleteBatchSize,
 		PartnersTourDeleteThreadQueueTemplate,
