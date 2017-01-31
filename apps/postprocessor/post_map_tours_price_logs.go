@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/uncleandy/tcache2/apps/postprocessor/post_map_tours_price_logs"
+	"github.com/uncleandy/tcache2/apps/postprocessor/post_map_tours_price_logs_lib"
 	"strings"
 	"github.com/uncleandy/tcache2/apps/workers/map_tours"
 	"github.com/uncleandy/tcache2/cache"

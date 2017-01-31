@@ -129,12 +129,13 @@ type TourBaseInterface interface {
 }
 
 type TourInterface interface {
+	GetId() uint64
 	ToString() string
 	FromString(source string) error
 	KeyData() string
 	PriceData() string
 	KeyDataCRC32() uint64
-	GenId() int64
+	GenId() (uint64, error)
 	InsertSQLFieldsSet() string
 	InsertSQLDataSet() string
 	UpdateSQLString() string

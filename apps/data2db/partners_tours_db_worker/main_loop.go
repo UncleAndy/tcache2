@@ -100,7 +100,7 @@ func (worker *PartnersToursDbWorker) ReadTour(id_str string) (tours.TourInterfac
 
 	tour.Id = id
 
-	return tour, nil
+	return tours.TourInterface(&tour), nil
 }
 
 func (worker *PartnersToursDbWorker) InsertToursFlush(tours *[]tours.TourInterface, size int) {
@@ -129,10 +129,11 @@ func (worker *PartnersToursDbWorker) UpdateToursFlush(tours *[]tours.TourInterfa
 	}
 
 	for _, tour := range *tours {
-		sql := "UPDATE cached_sletat_tours SET "+tour.UpdateSQLString()+" WHERE id = "+tour.Id
+		id_str := strconv.FormatUint(tour.GetId(), 10)
+		sql := "UPDATE cached_sletat_tours SET "+tour.UpdateSQLString()+" WHERE id = "+id_str
 		err := db.SendQueryParamsTrx(trx, sql)
 		if err != nil {
-			log.Error.Print("WARNING! Error when update partners tour "+ tour.Id +" to DB: ", err)
+			log.Error.Print("WARNING! Error when update partners tour "+ id_str +" to DB: ", err)
 		}
 	}
 

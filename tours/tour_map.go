@@ -124,6 +124,10 @@ func (t *TourMap) GenId() (uint64, error) {
 	return t.Id, err
 }
 
+func (t *TourMap) GetId() uint64 {
+	return t.Id
+}
+
 func (t *TourMap) PriceBiggerThen(price_data_str string) (bool, error) {
 	price_data := strings.Split(price_data_str, TourMapKeyDataSeparator)
 	price, err := strconv.ParseInt(price_data[0], 10, 64)

@@ -127,6 +127,10 @@ func (t *TourPartners) GenId() (uint64, error) {
 	return cache.NewID(TourPartnersRedisGenIdKey)
 }
 
+func (t *TourPartners) GetId() uint64 {
+	return t.Id
+}
+
 func (t *TourPartners) PriceBiggerThen(price_data_str string) (bool, error) {
 	price_data := strings.Split(price_data_str, TourPartnersKeyDataSeparator)
 	price, err := strconv.ParseInt(price_data[0], 10, 64)

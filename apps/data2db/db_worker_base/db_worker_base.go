@@ -16,6 +16,9 @@ type DbWorkerBase struct {
 }
 
 type DbWorkerBaseInterface interface {
+	Init()
+	MainLoop()
+	WaitFinish()
 	ReadTour(id_str string) (tours.TourInterface, error)
 	InsertProcessBy(thread_index int, batch_size int, queue_template string, thread_flag_key string)
 	UpdateProcessBy(thread_index int, batch_size int, queue_template string, thread_flag_key string)
@@ -49,7 +52,7 @@ func (worker *DbWorkerBase) InsertProcessBy(thread_index int, batch_size int, qu
 				continue
 			}
 		} else if err != nil {
-			log.Error.Print("WARNING! Error read insert queue for db:"+err)
+			log.Error.Print("WARNING! Error read insert queue for db:", err)
 			continue
 		}
 
@@ -92,7 +95,7 @@ func (worker *DbWorkerBase) UpdateProcessBy(thread_index int, batch_size int, qu
 				continue
 			}
 		} else if err != nil {
-			log.Error.Print("WARNING! Error read update queue for db:"+err)
+			log.Error.Print("WARNING! Error read update queue for db:", err)
 			continue
 		}
 
@@ -135,7 +138,7 @@ func (worker *DbWorkerBase) DeleteProcessBy(thread_index int, batch_size int, qu
 				continue
 			}
 		} else if id_str == "" || err != nil {
-			log.Error.Print("WARNING! Error read delete queue for db:"+err)
+			log.Error.Print("WARNING! Error read delete queue for db:", err)
 			continue
 		}
 

@@ -1,19 +1,19 @@
 package main
 
 import (
-	"github.com/uncleandy/tcache2/apps/workers/worker_base"
 	"github.com/uncleandy/tcache2/db"
 	"github.com/uncleandy/tcache2/cache"
 	"github.com/uncleandy/tcache2/apps/data2db/map_tours_db_worker"
 	"github.com/uncleandy/tcache2/apps/data2db/partners_tours_db_worker"
+	"github.com/uncleandy/tcache2/apps/data2db/db_worker_base"
 )
 
 var (
-	Workers []worker_base.WorkerBaseInterface
+	Workers []db_worker_base.DbWorkerBaseInterface
 )
 
 func InitDbWorkers() {
-	Workers = []worker_base.WorkerBaseInterface{
+	Workers = []db_worker_base.DbWorkerBaseInterface{
 		&map_tours_db_worker.MapToursDbWorker{},
 		&partners_tours_db_worker.PartnersToursDbWorker{},
 	}

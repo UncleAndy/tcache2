@@ -27,3 +27,6 @@ _testmain.go
 
 apps/loaders/sletat_loader
 apps/workers/worker
+apps/data2db/data2db_manager
+apps/data2db/data2db_worker
+apps/postprocessor/post_map_tours_price_logs
