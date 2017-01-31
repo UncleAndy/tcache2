@@ -9,6 +9,7 @@ import (
 	"time"
 	"fmt"
 	_ "github.com/lib/pq"
+	"strings"
 )
 
 type DbSettings struct {
@@ -139,4 +140,13 @@ func SendQueryParamsTrx(txn *sql.Tx, query string, params ...interface{}) error 
 	}
 
 	return nil
+}
+
+// TODO: Test lib
+func EscapedBy(source string, symbol string, code string) string {
+	return strings.Replace(source, symbol, code, -1)
+}
+
+func Escaped(source string) string {
+	return EscapedBy(source, "\"", "\\\"")
 }

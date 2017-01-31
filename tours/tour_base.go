@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"github.com/hjr265/redsync.go/redsync"
 	"github.com/uncleandy/tcache2/cache"
+	"github.com/uncleandy/tcache2/db"
 )
 
 const (
@@ -69,11 +70,17 @@ type DataOrderFields struct {
 	RefIntFields	map[string]int
 }
 
+type DataSQLFieldPair struct {
+	Field string
+	SQLField string
+}
+
 type DataSQLFields struct {
 	IdSQLField	string
-	StringFields 	map[string]string
-	IntFields 	map[string]string
-	RefIntFields	map[string]string
+	StringFields 	[]DataSQLFieldPair
+	IntToStringFields 	[]DataSQLFieldPair
+	IntFields 	[]DataSQLFieldPair
+	RefIntFields	[]DataSQLFieldPair
 }
 
 type TourBase struct {
@@ -219,7 +226,7 @@ func (t *TourBase) FieldsToString(fields_order *DataOrderFields ) string {
 	return strings.Join(fields_data, TourBaseDataSeparator)
 }
 
-// TODO: Tests
+// TODO: Tests lib
 func (t *TourBase) InsertSQLFieldsSetBy(fields_set *DataSQLFields) string {
 	result := ""
 	sep := ""
@@ -230,24 +237,29 @@ func (t *TourBase) InsertSQLFieldsSetBy(fields_set *DataSQLFields) string {
 	}
 
 	for _, db_field := range fields_set.IntFields {
-		result = result + sep + " " + db_field
+		result = result + sep + " " + db_field.SQLField
+		sep = ","
+	}
+
+	for _, db_field := range fields_set.IntToStringFields {
+		result = result + sep + " " + db_field.SQLField
 		sep = ","
 	}
 
 	for _, db_field := range fields_set.RefIntFields {
-		result = result + sep + " " + db_field
+		result = result + sep + " " + db_field.SQLField
 		sep = ","
 	}
 
 	for _, db_field := range fields_set.StringFields {
-		result = result + sep + " " + db_field
+		result = result + sep + " " + db_field.SQLField
 		sep = ","
 	}
 
 	return result
 }
 
-// TODO: Tests
+// TODO: Tests lib
 func (t *TourBase) InsertSQLDataSetBy(fields_set *DataSQLFields) string {
 	result := ""
 	sep := ""
@@ -257,14 +269,20 @@ func (t *TourBase) InsertSQLDataSetBy(fields_set *DataSQLFields) string {
 		sep = ","
 	}
 
-	for field, _ := range fields_set.IntFields {
-		value := reflect.ValueOf(t).Elem().FieldByName(field).Int()
+	for _, field := range fields_set.IntFields {
+		value := reflect.ValueOf(t).Elem().FieldByName(field.Field).Int()
 		result = result + sep + " " + strconv.FormatInt(value, 10)
 		sep = ","
 	}
 
-	for field, _ := range fields_set.RefIntFields {
-		elem := reflect.ValueOf(t).Elem().FieldByName(field)
+	for _, field := range fields_set.IntToStringFields {
+		value := reflect.ValueOf(t).Elem().FieldByName(field.Field).Int()
+		result = result + sep + " \"" + strconv.FormatInt(value, 10) + "\""
+		sep = ","
+	}
+
+	for _, field := range fields_set.RefIntFields {
+		elem := reflect.ValueOf(t).Elem().FieldByName(field.Field)
 		value := "-1"
 		if !elem.IsNil() {
 			value = strconv.FormatInt(elem.Elem().Int(), 10)
@@ -273,42 +291,46 @@ func (t *TourBase) InsertSQLDataSetBy(fields_set *DataSQLFields) string {
 		sep = ","
 	}
 
-	for field, _ := range fields_set.StringFields {
-		value := reflect.ValueOf(t).Elem().FieldByName(field).String()
-		// TODO: String " escape
-		result = result + sep + " \"" + value + "\""
+	for _, field := range fields_set.StringFields {
+		value := reflect.ValueOf(t).Elem().FieldByName(field.Field).String()
+		result = result + sep + " \"" + db.Escaped(value) + "\""
 		sep = ","
 	}
 
 	return result
 }
 
-// TODO: Tests
+// TODO: Tests lib
 func (t *TourBase) UpdateSQLStringBy(fields_set *DataSQLFields) string {
 	result := ""
 	sep := ""
 
-	for field, db_field := range fields_set.IntFields {
-		value := reflect.ValueOf(t).Elem().FieldByName(field).Int()
-		result = result + sep + " " + db_field + " = " + strconv.FormatInt(value, 10)
-		sep = ","
+	for _, field := range fields_set.IntFields {
+		value := reflect.ValueOf(t).Elem().FieldByName(field.Field).Int()
+		result = result + sep + field.SQLField + " = " + strconv.FormatInt(value, 10)
+		sep = ", "
 	}
 
-	for field, db_field := range fields_set.RefIntFields {
-		elem := reflect.ValueOf(t).Elem().FieldByName(field)
+	for _, field := range fields_set.IntToStringFields {
+		value := reflect.ValueOf(t).Elem().FieldByName(field.Field).Int()
+		result = result + sep + field.SQLField + " = \"" + strconv.FormatInt(value, 10) + "\""
+		sep = ", "
+	}
+
+	for _, field := range fields_set.RefIntFields {
+		elem := reflect.ValueOf(t).Elem().FieldByName(field.Field)
 		value := "-1"
 		if !elem.IsNil() {
 			value = strconv.FormatInt(elem.Elem().Int(), 10)
 		}
-		result = result + sep + " " + db_field + " = " + value
-		sep = ","
+		result = result + sep + field.SQLField + " = " + value
+		sep = ", "
 	}
 
-	for field, db_field := range fields_set.StringFields {
-		value := reflect.ValueOf(t).Elem().FieldByName(field).String()
-		// TODO: String " escape
-		result = result + sep + " " + db_field + " = \"" + value + "\""
-		sep = ","
+	for _,  field := range fields_set.StringFields {
+		value := reflect.ValueOf(t).Elem().FieldByName(field.Field).String()
+		result = result + sep + field.SQLField + " = \"" + db.Escaped(value) + "\""
+		sep = ", "
 	}
 
 	return result

@@ -281,3 +281,41 @@ func TestMultiCleanQueue(t *testing.T) {
 
 	cache.CleanQueue("test_queue2")
 }
+
+func TestMultiQueueSizeMethod(t *testing.T) {
+	init_test_redis_multi()
+
+	cache.CleanQueue("test_queue1")
+	cache.CleanQueue("test_queue2")
+	cache.CleanQueue("test_queue3")
+
+	cache.RedisSettings.MainServers[0].Connection.RPush("test_queue1", "Value1")
+	cache.RedisSettings.MainServers[1].Connection.RPush("test_queue1", "Value2")
+	cache.RedisSettings.MainServers[2].Connection.RPush("test_queue1", "Value3")
+
+	cache.RedisSettings.MainServers[2].Connection.RPush("test_queue1", "Value1")
+	cache.RedisSettings.MainServers[1].Connection.RPush("test_queue1", "Value2")
+	cache.RedisSettings.MainServers[0].Connection.RPush("test_queue1", "Value3")
+
+	cache.RedisSettings.MainServers[1].Connection.RPush("test_queue2", "Value1")
+	cache.RedisSettings.MainServers[2].Connection.RPush("test_queue2", "Value2")
+	cache.RedisSettings.MainServers[1].Connection.RPush("test_queue2", "Value3")
+
+	size1 := cache.QueueSize("test_queue1")
+	size2 := cache.QueueSize("test_queue2")
+	size3 := cache.QueueSize("test_queue3")
+
+	if size1 != 6 {
+		t.Error("Wrong queue size. Expected 6, got", size1)
+	}
+	if size2 != 3 {
+		t.Error("Wrong queue size. Expected 3, got", size2)
+	}
+	if size3 != 0 {
+		t.Error("Wrong queue size. Expected 0, got", size3)
+	}
+
+	cache.CleanQueue("test_queue1")
+	cache.CleanQueue("test_queue2")
+	cache.CleanQueue("test_queue3")
+}
