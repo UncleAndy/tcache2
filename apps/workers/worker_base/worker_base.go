@@ -34,10 +34,7 @@ func RunWorkers() {
 }
 
 func RunManagerLoop() {
-	// Only one loader tours manager
-	if Workers[0].IsPrimary() {
-		ManagerLoop()
-	}
+	ManagerLoop()
 }
 
 func WaitWorkersFinish() {

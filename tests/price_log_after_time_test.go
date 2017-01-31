@@ -2,7 +2,7 @@ package tests
 
 import (
 	"testing"
-	"github.com/uncleandy/tcache2/apps/postprocessor/post_map_tours_price_logs"
+	"github.com/uncleandy/tcache2/apps/postprocessor/post_map_tours_price_logs_lib"
 )
 
 func TestPriceLogAfterTime(t *testing.T) {

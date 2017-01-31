@@ -5,7 +5,7 @@ import (
 	"github.com/uncleandy/tcache2/apps/workers/map_tours"
 	"fmt"
 	"github.com/uncleandy/tcache2/cache"
-	"github.com/uncleandy/tcache2/apps/postprocessor/post_map_tours_price_logs"
+	"github.com/uncleandy/tcache2/apps/postprocessor/post_map_tours_price_logs_lib"
 	"github.com/bouk/monkey"
 	"reflect"
 	"github.com/uncleandy/tcache2/tours"
