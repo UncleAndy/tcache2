@@ -65,7 +65,7 @@ func (worker *MapToursDbWorker) DeleteProcess(thread_index int) {
 	)
 }
 
-func (worker *MapToursDbWorker) ReadTour(id_str string) (tours.TourInterface, error) {
+func (i MapTourRedisReader) ReadTour(id_str string) (tours.TourInterface, error) {
 	id, err := strconv.ParseUint(id_str, 10, 64)
 	if err != nil {
 		log.Error.Print("Error parse uint64 for id:", id_str)
@@ -103,17 +103,18 @@ func (worker *MapToursDbWorker) ReadTour(id_str string) (tours.TourInterface, er
 	return tours.TourInterface(&tour), nil
 }
 
-func (worker *MapToursDbWorker) InsertToursFlush(tours *[]tours.TourInterface, size int) {
+func (i MapTourDbSQLAction) InsertToursFlush(tours *[]tours.TourInterface, size int) {
 	// Insert tours to DB
 	first_tour := (*tours)[0]
 	insert_fields_sql := first_tour.InsertSQLFieldsSet()
 	sep := ""
 	data_sql := ""
-	for _, tour := range *tours {
+	for i := 0; i < size; i++ {
+		tour := (*tours)[i]
 		data_sql = data_sql + sep + "("+tour.InsertSQLDataSet()+")"
 		sep = ","
 	}
-	sql := "INSERT INTO cached_sletat_tours "+insert_fields_sql+" VALUES "+data_sql+";"
+	sql := "INSERT INTO cached_sletat_tours ("+insert_fields_sql+") VALUES "+data_sql+";"
 
 	db.CheckConnect()
 	_, err := db.SendQuery(sql)
@@ -122,13 +123,14 @@ func (worker *MapToursDbWorker) InsertToursFlush(tours *[]tours.TourInterface, s
 	}
 }
 
-func (worker *MapToursDbWorker) UpdateToursFlush(tours *[]tours.TourInterface, size int) {
+func (i MapTourDbSQLAction) UpdateToursFlush(tours *[]tours.TourInterface, size int) {
 	trx, err := db.StartTransaction()
 	if err != nil {
 		log.Error.Print("WARNING! Error update map tours start transaction: ", err)
 	}
 
-	for _, tour := range *tours {
+	for i := 0; i < size; i++ {
+		tour := (*tours)[i]
 		id_str := strconv.FormatUint(tour.GetId(), 10)
 		sql := "UPDATE cached_sletat_tours SET "+tour.UpdateSQLString()+" WHERE id = "+id_str
 		err := db.SendQueryParamsTrx(trx, sql)
@@ -143,7 +145,7 @@ func (worker *MapToursDbWorker) UpdateToursFlush(tours *[]tours.TourInterface, s
 	}
 }
 
-func (worker *MapToursDbWorker) DeleteToursFlush(tours *[]string, size int) {
+func (i MapTourDbSQLAction) DeleteToursFlush(tours *[]string, size int) {
 	ids := strings.Join(*tours, ",")
 	sql := "DELETE FROM cached_sletat_tours WHERE id IN (" + ids + ")"
 	db.CheckConnect()

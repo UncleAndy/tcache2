@@ -10,6 +10,7 @@ import (
 	"fmt"
 	_ "github.com/lib/pq"
 	"strings"
+	"regexp"
 )
 
 type DbSettings struct {
@@ -25,7 +26,7 @@ const (
 )
 
 var (
-	dbSettings DbSettings
+	CurrentDbSettings DbSettings
 	db *sql.DB
 )
 
@@ -44,7 +45,7 @@ func Init() {
 		log.Error.Fatalln(err)
 	}
 
-	err = yaml.Unmarshal(dat, &dbSettings)
+	err = yaml.Unmarshal(dat, &CurrentDbSettings)
 	if err != nil {
 		log.Error.Fatalf("error: %v", err)
 	}
@@ -53,11 +54,11 @@ func Init() {
 func Connect() *sql.DB {
 	dbConnection := fmt.Sprintf(
 		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
-		dbSettings.User,
-		dbSettings.Password,
-		dbSettings.Host,
-		dbSettings.Port,
-		dbSettings.DBName,
+		CurrentDbSettings.User,
+		CurrentDbSettings.Password,
+		CurrentDbSettings.Host,
+		CurrentDbSettings.Port,
+		CurrentDbSettings.DBName,
 	)
 
 	db, err := sql.Open("postgres", dbConnection)
@@ -121,7 +122,7 @@ func IsInListInt(list []int, id int) bool {
 }
 
 func SendQuery(query string, params ...interface{}) (*sql.Rows, error) {
-	return db.Query(query, params)
+	return db.Query(query, params...)
 }
 
 func SendQueryParamsTrx(txn *sql.Tx, query string, params ...interface{}) error {
@@ -142,11 +143,34 @@ func SendQueryParamsTrx(txn *sql.Tx, query string, params ...interface{}) error 
 	return nil
 }
 
-// TODO: Test lib
 func EscapedBy(source string, symbol string, code string) string {
 	return strings.Replace(source, symbol, code, -1)
 }
 
 func Escaped(source string) string {
-	return EscapedBy(source, "\"", "\\\"")
+	return EscapedBy(source, "'", "''")
+}
+
+// Convert time:
+// 2017-01-11T00:00:00Z -> 2017-01-11
+// 2017-01-11T00:00:01Z -> 2017-01-11 00:00:01
+func ConvertTime(src string) string {
+	split := strings.Split(src, "T")
+	if len(split) < 2 {
+		split_s := regexp.MustCompile("[^\\d\\:\\-]+")
+		split = split_s.Split(src, -1)
+		if len(split) <= 1 {
+			return src
+		}
+	}
+
+	if split[1] == "00:00:00Z" || split[1] == "00:00:00" {
+		return split[0]
+	} else {
+		time := split[1]
+		time = strings.Replace(time, "Z", "", -1)
+		return split[0] + " " + time
+	}
+
+	return src
 }

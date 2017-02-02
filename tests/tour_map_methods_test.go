@@ -37,10 +37,10 @@ func TourMapFixture() tours.TourMap {
 			FewEconomTicketsRtn:    13,
 			FewPlacesInHotel: 	14,
 			Flags:          15,
-			Description:	"Description \"text\" |||",
+			Description:	"Description 'text' |||",
 			TourUrl:        "http://site.com/tour1",
-			RoomName:       "Room | \"name\"",
-			ReceivingParty: "Receiving \"Party\" text",
+			RoomName:       "Room | 'name'",
+			ReceivingParty: "Receiving 'Party' text",
 			HtPlaceName:    "| Place name",
 			CreateDate:     "2017-01-02",
 			DptCityId:      16,
@@ -66,7 +66,7 @@ func TestTourMapMethods(t *testing.T) {
 	}
 
 	price_data := tour.PriceData()
-	price_data_expected := "20000|2017-01-01|18|19|6|7|8|9|Room &#124; \"name\"|&#124; Place name|http://site.com/tour1"
+	price_data_expected := "20000|2017-01-01|18|19|6|7|8|9|Room &#124; 'name'|&#124; Place name|http://site.com/tour1|2017-01-02"
 	if price_data != price_data_expected {
 		t.Error("TourMap PriceData wrong. Expected:\n", price_data_expected, "\ngot:\n", price_data)
 	}
@@ -100,8 +100,8 @@ func TestTourMapSQLMethods(t *testing.T) {
 	}
 
 	tour_fixture_insert_values := "111, 1, 20000, 2, 10, 2, 0, 3, 4, 5, 16, 17, 40000, 500, 600, "+
-		"18, 19, \"6\", \"7\", \"8\", \"9\", -1, -1, -1, \"2017-01-01\", \"2017-01-30\", \"http://site.com/tour1\", "+
-		"\"Room | \\\"name\\\"\", \"| Place name\", \"2017-01-02\""
+		"18, 19, '6', '7', '8', '9', -1, -1, -1, '2017-01-01', '2017-01-30', 'http://site.com/tour1', "+
+		"'Room | ''name''', '| Place name', '2017-01-02'"
 
 	insert_values := tour.InsertSQLDataSet()
 	if insert_values != tour_fixture_insert_values {
@@ -112,12 +112,12 @@ func TestTourMapSQLMethods(t *testing.T) {
 	tour_fixture_update_data := "source_id = 1, price = 20000, currency_id = 2, nights = 10, adults = 2, "+
 		"kids = 0, hotel_id = 3, town_id = 4, meal_id = 5, dpt_city_id = 16, country_id = 17, "+
 		"price_byr = 40000, price_eur = 500, price_usd = 600, "+
-		"fuel_surcharge_min = 18, fuel_surcharge_max = 19, tickets_included = \"6\", "+
-		"has_econom_tickets_dpt = \"7\", has_econom_tickets_rtn = \"8\", hotel_is_in_stop = \"9\", "+
-		"kid1age = -1, kid2age = -1, kid3age = -1, price_updated_at = \"2017-01-01\", "+
-		"checkin = \"2017-01-30\", tour_url = \"http://site.com/tour1\", "+
-		"room_name = \"Room | \\\"name\\\"\", ht_place_name = \"| Place name\", "+
-		"created_at = \"2017-01-02\""
+		"fuel_surcharge_min = 18, fuel_surcharge_max = 19, tickets_included = '6', "+
+		"has_econom_tickets_dpt = '7', has_econom_tickets_rtn = '8', hotel_is_in_stop = '9', "+
+		"kid1age = -1, kid2age = -1, kid3age = -1, price_updated_at = '2017-01-01', "+
+		"checkin = '2017-01-30', tour_url = 'http://site.com/tour1', "+
+		"room_name = 'Room | ''name''', ht_place_name = '| Place name', "+
+		"created_at = '2017-01-02'"
 
 	update_data := tour.UpdateSQLString()
 	if update_data != tour_fixture_update_data {

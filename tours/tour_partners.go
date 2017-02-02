@@ -47,6 +47,7 @@ var (
 			"TourUrl"		: 19,
 			"ReceivingParty"	: 20,
 			"Description"		: 21,
+			"CreateDate"		: 22,
 		},
 		IntFields	: map[string]int{
 			"Price"			: 0,

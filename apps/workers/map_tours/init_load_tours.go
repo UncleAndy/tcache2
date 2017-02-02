@@ -33,9 +33,9 @@ func (worker *MapToursWorker) LoadToursData() {
 				tickets_included, has_econom_tickets_dpt, has_econom_tickets_rtn, hotel_is_in_stop,
 				fuel_surcharge_min, fuel_surcharge_max, room_name, ht_place_name, tour_url
 			FROM cached_sletat_tours
-			WHERE id > ?
+			WHERE id > $1
 			ORDER BY id
-			LIMIT ?`,
+			LIMIT $2`,
 			last_id,
 			batchSizeForToursLoad,
 		)
@@ -43,7 +43,6 @@ func (worker *MapToursWorker) LoadToursData() {
 			log.Error.Fatal("Can not read CachedSletatTours data. Error: ", err)
 		}
 
-		defer rows.Close()
 
 		if rows.Err() != nil {
 			log.Error.Fatal("Can not read CachedSletatTours data. Error: ", rows.Err())
@@ -96,9 +95,12 @@ func (worker *MapToursWorker) LoadToursData() {
 			}
 
 			if last_id >= 0 && tour.Adults > 0 {
-				shard_crc := uint64(tour.KeyDataCRC32())
+				// Convert times
+				tour.Checkin = db.ConvertTime(tour.Checkin)
+				tour.CreateDate = db.ConvertTime(tour.CreateDate)
+				tour.UpdateDate = db.ConvertTime(tour.UpdateDate)
 
-				cache.Set(shard_crc,
+				cache.Set(tour.KeyDataCRC32(),
 					fmt.Sprintf(MapTourIDKeyTemplate, tour.KeyData()),
 					strconv.FormatUint(last_id, 10))
 				cache.Set(last_id,
@@ -113,6 +115,7 @@ func (worker *MapToursWorker) LoadToursData() {
 
 			last_count++
 		}
+		rows.Close()
 	}
 }
 

@@ -11,23 +11,32 @@ import (
 )
 
 type DbWorkerBase struct {
-	Settings worker_base.WorkerSettings
-	FinishChanel chan bool
+	Settings        worker_base.WorkerSettings
+	FinishChanel    chan bool
+	DbSQLAction     DbSQLActionInterface
+	RedisTourReader RedisTourReaderInterface
+}
+
+type RedisTourReaderInterface interface {
+	ReadTour(id_str string) (tours.TourInterface, error)
+}
+
+type DbSQLActionInterface interface {
+	InsertToursFlush(tours *[]tours.TourInterface, size int)
+	UpdateToursFlush(tours *[]tours.TourInterface, size int)
+	DeleteToursFlush(tours *[]string, size int)
 }
 
 type DbWorkerBaseInterface interface {
 	Init()
 	MainLoop()
 	WaitFinish()
-	ReadTour(id_str string) (tours.TourInterface, error)
 	InsertProcessBy(thread_index int, batch_size int, queue_template string, thread_flag_key string)
 	UpdateProcessBy(thread_index int, batch_size int, queue_template string, thread_flag_key string)
 	DeleteProcessBy(thread_index int, batch_size int, queue_template string, thread_flag_key string)
-	InsertToursFlush(tours *[]tours.TourInterface, size int)
-	UpdateToursFlush(tours *[]tours.TourInterface, size int)
-	DeleteToursFlush(tours *[]string, size int)
 }
 
+// TODO: Tests process
 func (worker *DbWorkerBase) InsertProcessBy(thread_index int, batch_size int, queue_template string, thread_flag_key string) {
 	insert_queue := fmt.Sprintf(queue_template, thread_index)
 	insert_tours := make([]tours.TourInterface, batch_size)
@@ -41,7 +50,7 @@ func (worker *DbWorkerBase) InsertProcessBy(thread_index int, batch_size int, qu
 			if err != redis.Nil {
 				// Flush data if present
 				if insert_tours_index > 0 {
-					worker.InsertToursFlush(&insert_tours, insert_tours_index)
+					worker.DbSQLAction.InsertToursFlush(&insert_tours, insert_tours_index)
 					insert_tours_index = 0
 				}
 
@@ -52,11 +61,11 @@ func (worker *DbWorkerBase) InsertProcessBy(thread_index int, batch_size int, qu
 				continue
 			}
 		} else if err != nil {
-			log.Error.Print("WARNING! Error read insert queue for db:", err)
+			// log.Error.Print("WARNING! Error read insert queue for db:", err)
 			continue
 		}
 
-		tour, err := worker.ReadTour(id_str)
+		tour, err := worker.RedisTourReader.ReadTour(id_str)
 		if err != nil {
 			runtime.Gosched()
 			continue
@@ -65,12 +74,13 @@ func (worker *DbWorkerBase) InsertProcessBy(thread_index int, batch_size int, qu
 		insert_tours[insert_tours_index] = tour
 		insert_tours_index++
 		if insert_tours_index >= batch_size {
-			worker.InsertToursFlush(&insert_tours, insert_tours_index)
+			worker.DbSQLAction.InsertToursFlush(&insert_tours, insert_tours_index)
 			insert_tours_index = 0
 		}
 	}
 }
 
+// TODO: Tests process
 func (worker *DbWorkerBase) UpdateProcessBy(thread_index int, batch_size int, queue_template string, thread_flag_key string) {
 	update_queue := fmt.Sprintf(queue_template, thread_index)
 	update_tours := make([]tours.TourInterface, batch_size)
@@ -84,7 +94,7 @@ func (worker *DbWorkerBase) UpdateProcessBy(thread_index int, batch_size int, qu
 			if err != redis.Nil {
 				// Flush data if present
 				if update_tours_index > 0 {
-					worker.UpdateToursFlush(&update_tours, update_tours_index)
+					worker.DbSQLAction.UpdateToursFlush(&update_tours, update_tours_index)
 					update_tours_index = 0
 				}
 
@@ -99,7 +109,7 @@ func (worker *DbWorkerBase) UpdateProcessBy(thread_index int, batch_size int, qu
 			continue
 		}
 
-		tour, err := worker.ReadTour(id_str)
+		tour, err := worker.RedisTourReader.ReadTour(id_str)
 		if err != nil {
 			runtime.Gosched()
 			continue
@@ -108,12 +118,13 @@ func (worker *DbWorkerBase) UpdateProcessBy(thread_index int, batch_size int, qu
 		update_tours[update_tours_index] = tour
 		update_tours_index++
 		if update_tours_index >= batch_size {
-			worker.UpdateToursFlush(&update_tours, update_tours_index)
+			worker.DbSQLAction.UpdateToursFlush(&update_tours, update_tours_index)
 			update_tours_index = 0
 		}
 	}
 }
 
+// TODO: Tests process
 func (worker *DbWorkerBase) DeleteProcessBy(thread_index int, batch_size int, queue_template string, thread_flag_key string) {
 	delete_queue := fmt.Sprintf(queue_template, thread_index)
 	delete_tours := make([]string, batch_size)
@@ -127,7 +138,7 @@ func (worker *DbWorkerBase) DeleteProcessBy(thread_index int, batch_size int, qu
 			if err != redis.Nil {
 				// Flush data if present
 				if delete_tours_index > 0 {
-					worker.DeleteToursFlush(&delete_tours, delete_tours_index)
+					worker.DbSQLAction.DeleteToursFlush(&delete_tours, delete_tours_index)
 					delete_tours_index = 0
 				}
 
@@ -145,25 +156,8 @@ func (worker *DbWorkerBase) DeleteProcessBy(thread_index int, batch_size int, qu
 		delete_tours[delete_tours_index] = id_str
 		delete_tours_index++
 		if delete_tours_index >= batch_size {
-			worker.DeleteToursFlush(&delete_tours, delete_tours_index)
+			worker.DbSQLAction.DeleteToursFlush(&delete_tours, delete_tours_index)
 			delete_tours_index = 0
 		}
 	}
-}
-
-func (worker *DbWorkerBase) ReadTour(id_str string) (tours.TourInterface, error) {
-	log.Error.Fatal("It is base method. You can not call it!")
-	return nil, nil
-}
-
-func (worker *DbWorkerBase) InsertToursFlush(tours *[]tours.TourInterface, size int) {
-	log.Error.Fatal("It is base method. You can not call it!")
-}
-
-func (worker *DbWorkerBase) UpdateToursFlush(tours *[]tours.TourInterface, size int) {
-	log.Error.Fatal("It is base method. You can not call it!")
-}
-
-func (worker *DbWorkerBase) DeleteToursFlush(tours *[]string, size int) {
-	log.Error.Fatal("It is base method. You can not call it!")
 }

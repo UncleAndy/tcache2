@@ -47,6 +47,7 @@ func TestTourToString(t *testing.T) {
 		"600",
 		"18",
 		"19",
+		"2017-01-02",
 	}
 	tour_string := strings.Join(tour_data, tours.TourBaseDataSeparator)
 

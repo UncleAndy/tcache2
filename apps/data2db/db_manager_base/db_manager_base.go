@@ -1,4 +1,4 @@
-package manager_base
+package db_manager_base
 
 import (
 	"github.com/uncleandy/tcache2/apps/workers/worker_base"
@@ -34,7 +34,6 @@ type ManagerBase struct {
 	TourDeleteThreadDataCounter string
 }
 
-// TODO: Tests process
 func (worker *ManagerBase) ManagerLoop() {
 	cache.Del(0, worker.TourInsertThreadDataCounter)
 	cache.Del(0, worker.TourUpdateThreadDataCounter)

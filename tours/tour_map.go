@@ -41,6 +41,7 @@ var (
 			"RoomName"	: 8,
 			"HtPlaceName"	: 9,
 			"TourUrl"	: 10,
+			"CreateDate"	: 11,
 		},
 		IntFields	: map[string]int{
 			"Price"			: 0,

@@ -18,9 +18,18 @@ const (
 	MapTourDeleteThreadDataCounter = "map_tours_delete_counter"
 )
 
+type MapTourRedisReader struct {
+}
+
+type MapTourDbSQLAction struct {
+}
+
 func (worker *MapToursDbWorker) Init() {
 	worker.LoadWorkerConfig()
 	worker.FinishChanel = make(chan bool)
+
+	worker.DbSQLAction = MapTourDbSQLAction{}
+	worker.RedisTourReader = MapTourRedisReader{}
 }
 
 func (worker *MapToursDbWorker) WaitFinish() {

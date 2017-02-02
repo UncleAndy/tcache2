@@ -65,7 +65,7 @@ func (worker *PartnersToursDbWorker) DeleteProcess(thread_index int) {
 	)
 }
 
-func (worker *PartnersToursDbWorker) ReadTour(id_str string) (tours.TourInterface, error) {
+func (i PartnersTourRedisReader) ReadTour(id_str string) (tours.TourInterface, error) {
 	id, err := strconv.ParseUint(id_str, 10, 64)
 	if err != nil {
 		log.Error.Print("Error parse uint64 for id:", id_str)
@@ -103,7 +103,7 @@ func (worker *PartnersToursDbWorker) ReadTour(id_str string) (tours.TourInterfac
 	return tours.TourInterface(&tour), nil
 }
 
-func (worker *PartnersToursDbWorker) InsertToursFlush(tours *[]tours.TourInterface, size int) {
+func (i PartnersTourDbSQLAction) InsertToursFlush(tours *[]tours.TourInterface, size int) {
 	// Insert tours to DB
 	first_tour := (*tours)[0]
 	insert_fields_sql := first_tour.InsertSQLFieldsSet()
@@ -122,7 +122,7 @@ func (worker *PartnersToursDbWorker) InsertToursFlush(tours *[]tours.TourInterfa
 	}
 }
 
-func (worker *PartnersToursDbWorker) UpdateToursFlush(tours *[]tours.TourInterface, size int) {
+func (i PartnersTourDbSQLAction) UpdateToursFlush(tours *[]tours.TourInterface, size int) {
 	trx, err := db.StartTransaction()
 	if err != nil {
 		log.Error.Print("WARNING! Error update partners tours start transaction: ", err)
@@ -143,7 +143,7 @@ func (worker *PartnersToursDbWorker) UpdateToursFlush(tours *[]tours.TourInterfa
 	}
 }
 
-func (worker *PartnersToursDbWorker) DeleteToursFlush(tours *[]string, size int) {
+func (i PartnersTourDbSQLAction) DeleteToursFlush(tours *[]string, size int) {
 	ids := strings.Join(*tours, ",")
 	sql := "DELETE FROM cached_sletat_tours WHERE id IN (" + ids + ")"
 	db.CheckConnect()

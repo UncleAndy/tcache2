@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"errors"
+	"gopkg.in/redis.v4"
 )
 
 const (
@@ -80,7 +80,7 @@ func MaxQueueServerSearchBy(queue string, servers *[]RedisServer) (RedisServer, 
 	}
 	var err error
 	if max == 0 {
-		err = errors.New("No data in queue")
+		err = redis.Nil
 	}
 	return res, err
 }

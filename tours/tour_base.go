@@ -25,8 +25,9 @@ var (
 			"Description"	: 27,
 			"TourUrl"	: 28,
 			"RoomName"	: 29,
-			"ReceivingParty" : 30,
+			"ReceivingParty": 30,
 			"HtPlaceName"	: 31,
+			"CreateDate"	: 37,
 		},
 		IntFields	: map[string]int{
 			"HotelId" 	: 0,
@@ -226,7 +227,6 @@ func (t *TourBase) FieldsToString(fields_order *DataOrderFields ) string {
 	return strings.Join(fields_data, TourBaseDataSeparator)
 }
 
-// TODO: Tests lib
 func (t *TourBase) InsertSQLFieldsSetBy(fields_set *DataSQLFields) string {
 	result := ""
 	sep := ""
@@ -259,7 +259,6 @@ func (t *TourBase) InsertSQLFieldsSetBy(fields_set *DataSQLFields) string {
 	return result
 }
 
-// TODO: Tests lib
 func (t *TourBase) InsertSQLDataSetBy(fields_set *DataSQLFields) string {
 	result := ""
 	sep := ""
@@ -277,7 +276,7 @@ func (t *TourBase) InsertSQLDataSetBy(fields_set *DataSQLFields) string {
 
 	for _, field := range fields_set.IntToStringFields {
 		value := reflect.ValueOf(t).Elem().FieldByName(field.Field).Int()
-		result = result + sep + " \"" + strconv.FormatInt(value, 10) + "\""
+		result = result + sep + " '" + strconv.FormatInt(value, 10) + "'"
 		sep = ","
 	}
 
@@ -293,14 +292,13 @@ func (t *TourBase) InsertSQLDataSetBy(fields_set *DataSQLFields) string {
 
 	for _, field := range fields_set.StringFields {
 		value := reflect.ValueOf(t).Elem().FieldByName(field.Field).String()
-		result = result + sep + " \"" + db.Escaped(value) + "\""
+		result = result + sep + " '" + db.Escaped(value) + "'"
 		sep = ","
 	}
 
 	return result
 }
 
-// TODO: Tests lib
 func (t *TourBase) UpdateSQLStringBy(fields_set *DataSQLFields) string {
 	result := ""
 	sep := ""
@@ -313,7 +311,7 @@ func (t *TourBase) UpdateSQLStringBy(fields_set *DataSQLFields) string {
 
 	for _, field := range fields_set.IntToStringFields {
 		value := reflect.ValueOf(t).Elem().FieldByName(field.Field).Int()
-		result = result + sep + field.SQLField + " = \"" + strconv.FormatInt(value, 10) + "\""
+		result = result + sep + field.SQLField + " = '" + strconv.FormatInt(value, 10) + "'"
 		sep = ", "
 	}
 
@@ -329,7 +327,7 @@ func (t *TourBase) UpdateSQLStringBy(fields_set *DataSQLFields) string {
 
 	for _,  field := range fields_set.StringFields {
 		value := reflect.ValueOf(t).Elem().FieldByName(field.Field).String()
-		result = result + sep + field.SQLField + " = \"" + db.Escaped(value) + "\""
+		result = result + sep + field.SQLField + " = '" + db.Escaped(value) + "'"
 		sep = ", "
 	}
 

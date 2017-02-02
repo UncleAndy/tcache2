@@ -18,6 +18,12 @@ const (
 	PartnersTourDeleteThreadDataCounter = "partners_tours_delete_counter"
 )
 
+type PartnersTourRedisReader struct {
+}
+
+type PartnersTourDbSQLAction struct {
+}
+
 func (worker *PartnersToursDbWorker) Init() {
 	worker.LoadWorkerConfig()
 	worker.FinishChanel = make(chan bool)

@@ -1,9 +1,9 @@
 package map_tours_db_manager
 
 import (
-	"github.com/uncleandy/tcache2/apps/data2db/manager_base"
+	"github.com/uncleandy/tcache2/apps/data2db/db_manager_base"
 )
 
 type MapToursDbManager struct {
-	manager_base.ManagerBase
+	db_manager_base.ManagerBase
 }
