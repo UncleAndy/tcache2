@@ -146,7 +146,8 @@ func (i MapTourDbSQLAction) UpdateToursFlush(tours *[]tours.TourInterface, size 
 }
 
 func (i MapTourDbSQLAction) DeleteToursFlush(tours *[]string, size int) {
-	ids := strings.Join(*tours, ",")
+	actual := (*tours)[0:size]
+	ids := strings.Join(actual, ",")
 	sql := "DELETE FROM cached_sletat_tours WHERE id IN (" + ids + ")"
 	db.CheckConnect()
 	_, err := db.SendQuery(sql)
