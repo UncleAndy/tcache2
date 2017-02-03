@@ -31,3 +31,10 @@ apps/workers/manager
 apps/data2db/data2db_manager
 apps/data2db/data2db_worker
 apps/postprocessor/post_map_tours_price_logs
+
+sletat_loader
+worker
+manager
+data2db_manager
+data2db_worker
+post_map_tours_price_logs
