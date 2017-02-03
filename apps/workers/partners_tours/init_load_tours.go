@@ -14,8 +14,39 @@ const (
 )
 
 // Sync partners tours data from DB to Redis
+// TODO: Tests process
 func (worker *PartnersToursWorker) LoadToursData() {
 	db.CheckConnect()
+
+	// Load data town_id -> country_id
+	country_by_town := map[int]int{}
+	rows, err := db.SendQuery(
+		`SELECT sletat_city_id, sletat_country_id
+		FROM sletat_cities`,
+	)
+	if err != nil {
+		log.Error.Fatal("Can not read SletatCities data. Error: ", err)
+	}
+
+	if rows.Err() != nil {
+		log.Error.Fatal("Can not read SletatCities data. Error: ", rows.Err())
+	}
+
+	for rows.Next() {
+		var town_id int
+		var country_id int
+		err = rows.Scan(
+			&town_id,
+			&country_id,
+		)
+
+		if err != nil {
+			log.Error.Println(err)
+		} else {
+			country_by_town[town_id] = country_id
+		}
+	}
+	rows.Close()
 
 	var last_id uint64
 	var last_count int
@@ -31,22 +62,21 @@ func (worker *PartnersToursWorker) LoadToursData() {
 				has_econom_tickets_dpt, has_econom_tickets_rtn, hotel_is_in_stop,
 				sletat_request_id, sletat_offer_id, few_econom_tickets_dpt,
 				few_econom_tickets_rtn, few_places_in_hotel, flags, description, tour_url,
- 				room_name, receiving_party, update_date, meal_id, meal_name, ht_place_name
+ 				room_name, receiving_party, update_date, meal_id, meal_name, ht_place_name,
+ 				created_at
 			FROM partners_tours
-			WHERE id > ?
+			WHERE id > $1
 			ORDER BY id
-			LIMIT ?`,
+			LIMIT $2`,
 			last_id,
 			batchSizeForToursLoad,
 		)
 		if err != nil {
-			log.Error.Fatal("Can not read CachedSletatTours data. Error: ", err)
+			log.Error.Fatal("Can not read PartnersTours data. Error: ", err)
 		}
 
-		defer rows.Close()
-
 		if rows.Err() != nil {
-			log.Error.Fatal("Can not read CachedSletatTours data. Error: ", rows.Err())
+			log.Error.Fatal("Can not read PartnersTours data. Error: ", rows.Err())
 		}
 
 		kid1age := -1
@@ -91,12 +121,20 @@ func (worker *PartnersToursWorker) LoadToursData() {
 				&tour.MealId,
 				&tour.MealName,
 				&tour.HtPlaceName,
+				&tour.CreateDate,
 			)
 			if err != nil {
 				log.Error.Println(err)
 			}
 
 			if last_id >= 0 && tour.Adults > 0 {
+				// Convert times
+				tour.Checkin = db.ConvertTime(tour.Checkin)
+				tour.CreateDate = db.ConvertTime(tour.CreateDate)
+				tour.UpdateDate = db.ConvertTime(tour.UpdateDate)
+
+				tour.CountryId = country_by_town[tour.TownId]
+
 				shard_crc := tour.KeyDataCRC32()
 				last_id_str := strconv.FormatUint(last_id, 10)
 
@@ -109,6 +147,7 @@ func (worker *PartnersToursWorker) LoadToursData() {
 
 			last_count++
 		}
+		rows.Close()
 	}
 }
 

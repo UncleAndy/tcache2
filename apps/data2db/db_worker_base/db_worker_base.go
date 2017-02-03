@@ -36,7 +36,6 @@ type DbWorkerBaseInterface interface {
 	DeleteProcessBy(thread_index int, batch_size int, queue_template string, thread_flag_key string)
 }
 
-// TODO: Tests process
 func (worker *DbWorkerBase) InsertProcessBy(thread_index int, batch_size int, queue_template string, thread_flag_key string) {
 	insert_queue := fmt.Sprintf(queue_template, thread_index)
 	insert_tours := make([]tours.TourInterface, batch_size)
@@ -80,7 +79,6 @@ func (worker *DbWorkerBase) InsertProcessBy(thread_index int, batch_size int, qu
 	}
 }
 
-// TODO: Tests process
 func (worker *DbWorkerBase) UpdateProcessBy(thread_index int, batch_size int, queue_template string, thread_flag_key string) {
 	update_queue := fmt.Sprintf(queue_template, thread_index)
 	update_tours := make([]tours.TourInterface, batch_size)
@@ -124,7 +122,6 @@ func (worker *DbWorkerBase) UpdateProcessBy(thread_index int, batch_size int, qu
 	}
 }
 
-// TODO: Tests process
 func (worker *DbWorkerBase) DeleteProcessBy(thread_index int, batch_size int, queue_template string, thread_flag_key string) {
 	delete_queue := fmt.Sprintf(queue_template, thread_index)
 	delete_tours := make([]string, batch_size)

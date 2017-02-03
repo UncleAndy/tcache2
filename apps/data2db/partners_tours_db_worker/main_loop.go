@@ -38,6 +38,7 @@ func (worker *PartnersToursDbWorker) Thread(thread_index int) {
 	}()
 }
 
+// TODO: Tests process like map tours
 func (worker *PartnersToursDbWorker) InsertProcess(thread_index int) {
 	db_worker_base.DbWorkerBaseInterface(worker).InsertProcessBy(
 		thread_index,
@@ -109,11 +110,12 @@ func (i PartnersTourDbSQLAction) InsertToursFlush(tours *[]tours.TourInterface, 
 	insert_fields_sql := first_tour.InsertSQLFieldsSet()
 	sep := ""
 	data_sql := ""
-	for _, tour := range *tours {
+	for i := 0; i < size; i++ {
+		tour := (*tours)[i]
 		data_sql = data_sql + sep + "("+tour.InsertSQLDataSet()+")"
 		sep = ","
 	}
-	sql := "INSERT INTO cached_sletat_tours "+insert_fields_sql+" VALUES "+data_sql+";"
+	sql := "INSERT INTO partners_tours ("+insert_fields_sql+") VALUES "+data_sql+";"
 
 	db.CheckConnect()
 	_, err := db.SendQuery(sql)
@@ -128,9 +130,10 @@ func (i PartnersTourDbSQLAction) UpdateToursFlush(tours *[]tours.TourInterface, 
 		log.Error.Print("WARNING! Error update partners tours start transaction: ", err)
 	}
 
-	for _, tour := range *tours {
+	for i := 0; i < size; i++ {
+		tour := (*tours)[i]
 		id_str := strconv.FormatUint(tour.GetId(), 10)
-		sql := "UPDATE cached_sletat_tours SET "+tour.UpdateSQLString()+" WHERE id = "+id_str
+		sql := "UPDATE partners_tours SET "+tour.UpdateSQLString()+" WHERE id = "+id_str
 		err := db.SendQueryParamsTrx(trx, sql)
 		if err != nil {
 			log.Error.Print("WARNING! Error when update partners tour "+ id_str +" to DB: ", err)
@@ -144,8 +147,9 @@ func (i PartnersTourDbSQLAction) UpdateToursFlush(tours *[]tours.TourInterface, 
 }
 
 func (i PartnersTourDbSQLAction) DeleteToursFlush(tours *[]string, size int) {
-	ids := strings.Join(*tours, ",")
-	sql := "DELETE FROM cached_sletat_tours WHERE id IN (" + ids + ")"
+	actual := (*tours)[0:size]
+	ids := strings.Join(actual, ",")
+	sql := "DELETE FROM partners_tours WHERE id IN (" + ids + ")"
 	db.CheckConnect()
 	_, err := db.SendQuery(sql)
 	if err != nil {

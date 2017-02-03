@@ -94,7 +94,7 @@ var (
 		},
 		IntFields: []DataSQLFieldPair{
 			DataSQLFieldPair { Field: "Nights",		SQLField: "nights" },
-			DataSQLFieldPair { Field: "Adults",		SQLField: "adulst" },
+			DataSQLFieldPair { Field: "Adults",		SQLField: "adults" },
 			DataSQLFieldPair { Field: "Kids",		SQLField: "kids" },
 			DataSQLFieldPair { Field: "DptCityId",		SQLField: "dpt_city_id" },
 			DataSQLFieldPair { Field: "TownId",		SQLField: "town_id" },
