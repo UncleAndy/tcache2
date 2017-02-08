@@ -56,13 +56,14 @@ func (post_worker *PostMapToursWorker) ProcessPriceLogs(tour_id uint64) {
 	actual_logs := PriceLogAfterTime(price_log, expire_time)
 
 	if len(actual_logs) <= 0 {
-		cache.Del(tour_id, price_log_key)
+		post_worker.DeleteMapTour(tour_id, "", price_data_key, price_log_key)
 		return
 	}
 
 	// Find min price from price_logs
 	var min_price_data string
 	var min_price_time string
+	min_price := -1
 	for _, price_log_row := range actual_logs {
 		tour_price := tours.TourMap{}
 		err := tour_price.FromPriceData(price_log_row)
@@ -70,9 +71,10 @@ func (post_worker *PostMapToursWorker) ProcessPriceLogs(tour_id uint64) {
 			continue
 		}
 
-		if tour_price.Price < tour.Price {
+		if min_price == -1 || tour_price.Price <= min_price {
 			min_price_data = price_log_row
 			min_price_time = tour_price.UpdateDate
+			min_price = tour_price.Price
 		}
 	}
 
@@ -89,6 +91,9 @@ func (post_worker *PostMapToursWorker) ProcessPriceLogs(tour_id uint64) {
 
 		// Add id to update queue
 		cache.AddQueue(map_tours.MapTourUpdateQueue, strconv.FormatUint(tour_id, 10))
+	} else {
+		println("2")
+		post_worker.DeleteMapTour(tour_id, "", price_data_key, price_log_key)
 	}
 }
 
@@ -136,4 +141,31 @@ func PriceLogAfterTime(price_log []string, time_str string) []string {
 	}
 
 	return result
+}
+
+// Delete map tour from cache and set ID to queue fro delete from DB
+func (post_worker *PostMapToursWorker) DeleteMapTour(tour_id uint64, key_data_key string, price_data_key string, price_log_key string) {
+	if key_data_key == "" {
+		key_data_key = fmt.Sprintf(map_tours.MapTourKeyDataKeyTemplate, tour_id)
+	}
+	if price_data_key == "" {
+		price_data_key = fmt.Sprintf(map_tours.MapTourPriceDataKeyTemplate, tour_id)
+	}
+	if price_log_key == "" {
+		price_log_key = fmt.Sprintf(map_tours.MapTourPriceLogKeyTemplate, tour_id)
+	}
+
+	cache.Del(tour_id, price_log_key)
+	cache.Del(tour_id, price_data_key)
+
+	key_data, err := cache.Get(tour_id, key_data_key)
+	if err == nil {
+		cache.Del(tour_id, fmt.Sprintf(map_tours.MapTourKeyDataKeyTemplate, tour_id))
+		tour := tours.TourMap{}
+		tour.FromKeyData(key_data)
+		cache.Del(tour.KeyDataCRC32(), fmt.Sprintf(map_tours.MapTourIDKeyTemplate, key_data))
+	}
+
+	// Delete tour from DB
+	cache.AddQueue(map_tours.MapTourDeleteQueue, strconv.FormatUint(tour_id, 10))
 }

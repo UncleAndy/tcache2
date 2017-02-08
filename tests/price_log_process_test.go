@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"github.com/uncleandy/tcache2/tours"
 	"time"
+	"gopkg.in/redis.v4"
 )
 
 func TestPriceLogProcess(t *testing.T) {
@@ -75,22 +76,13 @@ func TestPriceLogProcess(t *testing.T) {
 
 	// Read data
 	result_price_data, err := cache.Get(tour_id, price_data_key)
-	if err != nil {
-		t.Error("Can not read price data from ", price_data_key)
+	if err != redis.Nil {
+		t.Error("Price data should by clean, but got ", price_data_key)
 	}
 
 	result_price_log, err := cache.LRange(tour_id, price_log_key, 0, -1)
-	if err != nil {
-		t.Error("Can not read price log from ", price_log_key)
-	}
-
-	// Check result
-	if result_price_data != tour.PriceData() {
-		t.Error("Tour price data canges! Expected ", tour.PriceData(), ", got", result_price_data)
-	}
-
-	if len(result_price_log) > 0 {
-		t.Error("Tour price log not clean! Expected len = 0, got", len(result_price_log))
+	if err != redis.Nil && len(result_price_log) != 0 {
+		t.Error("Price log data should by clean, but got ", result_price_log)
 	}
 
 	// Case 2: If tour price lower all prices from price log
@@ -118,12 +110,13 @@ func TestPriceLogProcess(t *testing.T) {
 	}
 
 	// Check result
-	if result_price_data != tour.PriceData() {
-		t.Error("Tour price data canges! Expected ", tour.PriceData(), ", got", result_price_data)
+	if result_price_data != tour2.PriceData() {
+		t.Error("Tour price data change! Expected ", tour2.PriceData(), ", got", result_price_data)
 	}
 
-	if len(result_price_log) != len(price_log) {
-		t.Error("Tour price log should not change! Expected len = ", len(price_log),
+	// Must keep only records in price log AFTER current (1)
+	if len(result_price_log) != 1 {
+		t.Error("Tour price log should not change! Expected len = 1 ",
 			", got", len(result_price_log))
 	}
 
