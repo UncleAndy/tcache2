@@ -104,6 +104,8 @@ func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
 		}
 
 		mutex = worker.LockTourUpdate(id_tour)
+		mutex.Lock()
+		defer mutex.Unlock()
 		cache.Set(crc,
 			fmt.Sprintf(MapTourIDKeyTemplate, tour.KeyData()), strconv.FormatUint(id_tour, 10))
 		cache.Set(id_tour,
@@ -124,6 +126,8 @@ func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
 		}
 
 		mutex = worker.LockTourUpdate(id_tour)
+		mutex.Lock()
+		defer mutex.Unlock()
 		old_price_data, err_price := cache.Get(id_tour, fmt.Sprintf(MapTourPriceDataKeyTemplate, id_tour))
 		if err_price != nil && err_price != redis.Nil {
 			log.Error.Print("Error read PriceData for tour ", id_tour, ":", err)
@@ -142,7 +146,6 @@ func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
 			log.Error.Print("Error compare prices:", err)
 		}
 	}
-	if (mutex != nil) { mutex.Unlock() }
 }
 
 func (worker *MapToursWorker) IsPrimary() bool {

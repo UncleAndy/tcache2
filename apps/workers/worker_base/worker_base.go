@@ -8,6 +8,8 @@ import (
 
 type WorkerBaseInterface interface {
 	Init()
+	LoadWorkerConfig()
+	LoadDictData()
 	MainLoop()
 	WaitFinish()
 	SendTour(string)
@@ -45,17 +47,17 @@ func WaitWorkersFinish() {
 
 func ManagerLoop() {
 	// Scan Redis tours loader queue & move tours to worker threads Redis queue
-	go func() {
-		for !ForceStopManagerLoop {
-			tour_str, err := cache.GetQueue(sletat.LoaderQueueToursName)
-			if err != nil || tour_str == "" {
-				time.Sleep(1 * time.Second)
-				continue
-			}
-
-			for _, worker := range Workers {
-				worker.SendTour(tour_str)
-			}
+	println("Main loop start...")
+	for !ForceStopManagerLoop {
+		tour_str, err := cache.GetQueue(sletat.LoaderQueueToursName)
+		if err != nil || tour_str == "" {
+			time.Sleep(1 * time.Second)
+			continue
 		}
-	}()
+
+		for _, worker := range Workers {
+			worker.SendTour(tour_str)
+		}
+	}
+	println("Main loop stoped.")
 }

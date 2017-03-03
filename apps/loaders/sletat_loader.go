@@ -7,6 +7,7 @@ import (
 
 func main() {
 	cache.InitFromEnv()
+	cache.RedisInit()
 	sletat.Init()
 	sletat.MainLoop()
 }

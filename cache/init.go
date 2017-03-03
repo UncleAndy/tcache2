@@ -43,11 +43,19 @@ func ReadSettings(file_name string) {
 }
 
 func RedisInit() {
+	if len(RedisSettings.MainServers) <= 0 {
+		log.Error.Fatalln("No main servers in config.")
+	}
+
 	redis_servers_connect(&RedisSettings.MainServers)
 	queue_sizes_mutex_init(&RedisSettings.MainServers)
 	redis_server_queue_sizes_init(&RedisSettings.MainServers)
 
 	if RedisSettings.ReconfigureMode {
+		if len(RedisSettings.OldServers) <= 0 {
+			log.Error.Fatalln("No old servers in config for reconfigure mode.")
+		}
+
 		redis_servers_connect(&RedisSettings.OldServers)
 		queue_sizes_mutex_init(&RedisSettings.OldServers)
 		redis_server_queue_sizes_init(&RedisSettings.OldServers)

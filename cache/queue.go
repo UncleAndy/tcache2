@@ -126,6 +126,33 @@ func GetQueue(queue string) (string, error) {
 	return val, err
 }
 
+func GetQueueBatch(queue string, batch_size int64) ([]string, error) {
+	QueueSizesUpdate(queue, &RedisSettings.MainServers)
+	maxQueueServer, err := MaxQueueMainServerSearch(queue)
+	var val []string
+	if err == nil {
+		val, err = maxQueueServer.Connection.LRange(queue, 0, batch_size - 1).Result()
+	}
+
+	if err != nil {
+		QueueSizesUpdate(queue, &RedisSettings.OldServers)
+		maxQueueOldServer, s_err := MaxQueueOldServerSearch(queue)
+		if s_err == nil {
+			val, err = maxQueueOldServer.Connection.LRange(queue, 0, batch_size - 1).Result()
+
+			if err == nil {
+				maxQueueOldServer.Connection.LTrim(queue, int64(len(val)), -1)
+				dec_queue_size_by(queue, &maxQueueOldServer, int64(len(val)))
+			}
+		}
+	} else {
+		maxQueueServer.Connection.LTrim(queue, int64(len(val)), -1)
+		dec_queue_size_by(queue, &maxQueueServer, int64(len(val)))
+	}
+
+	return val, err
+}
+
 func IsEmptyQueue(queue string) bool {
 	QueueSizesUpdate(queue, &RedisSettings.MainServers)
 	maxQueueServer, err := MaxQueueMainServerSearch(queue)
@@ -172,11 +199,15 @@ func inc_queue_size(queue string, server *RedisServer) {
 }
 
 func dec_queue_size(queue string, server *RedisServer) {
+	dec_queue_size_by(queue, server, 1)
+}
+
+func dec_queue_size_by(queue string, server *RedisServer, size int64) {
 	(*server).QueueSizesMutex.Lock()
 	if (*server).QueueSizes[queue] <= 0 {
 		(*server).QueueSizes[queue] = 0
 	} else {
-		(*server).QueueSizes[queue]--
+		(*server).QueueSizes[queue]-= size
 	}
 	(*server).QueueSizesMutex.Unlock()
 }

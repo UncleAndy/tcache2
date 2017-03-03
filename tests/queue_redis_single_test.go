@@ -160,7 +160,7 @@ func TestSingleGetQueueFromMain(t *testing.T) {
 
 	val, err = cache.GetQueue("test_queue1")
 
-	if err != redis.Nil && err.Error() != "No data in queue" {
+	if err != redis.Nil && err != nil && err.Error() != "No data in queue" {
 		t.Errorf(
 			"Can not read queue 'test_queue1' over GetQueue: %s",
 			err,
@@ -172,6 +172,127 @@ func TestSingleGetQueueFromMain(t *testing.T) {
 			val,
 		)
 	}
+
+	cache.CleanQueue("test_queue1")
+}
+
+
+func TestSingleGetQueueBatchFromMain(t *testing.T) {
+	init_test_redis_single()
+
+	cache.RedisSettings.MainServers[0].Connection.RPush("test_queue1", "Value1")
+	cache.RedisSettings.MainServers[0].Connection.RPush("test_queue1", "Value2")
+	cache.RedisSettings.MainServers[0].Connection.RPush("test_queue1", "Value3")
+
+	val, err := cache.GetQueueBatch("test_queue1", 10)
+
+	if err != nil {
+		t.Errorf(
+			"Can not read queue 'test_queue1' over GetQueueBatch: %s",
+			err,
+		)
+	} else if len(val) != 3 {
+		t.Errorf(
+			"Wrong list length from 'test_queue1' over GetQueueBatch: expected 3, got '%d'",
+			len(val),
+		)
+	} else if val[0] != "Value1" {
+		t.Errorf(
+			"Wrong data read [0] from 'test_queue1' over GetQueueBatch: expected 'Value1', got '%s'",
+			val[0],
+		)
+	} else if val[1] != "Value2" {
+		t.Errorf(
+			"Wrong data read [1] from 'test_queue1' over GetQueueBatch: expected 'Value2', got '%s'",
+			val[1],
+		)
+	} else if val[2] != "Value3" {
+		t.Errorf(
+			"Wrong data read [2] from 'test_queue1' over GetQueueBatch: expected 'Value3', got '%s'",
+			val[2],
+		)
+	}
+
+	val, err = cache.GetQueueBatch("test_queue1", 10)
+
+	if err != redis.Nil && err != nil && err.Error() != "No data in queue" {
+		t.Errorf(
+			"Can not read empty queue 'test_queue1' over GetQueueBatch: %s",
+			err,
+		)
+	}
+	if len(val) != 0 {
+		t.Errorf(
+			"Wrong list length from empty 'test_queue1' over GetQueueBatch: expected 0, got '%d'",
+			len(val),
+		)
+	}
+
+	cache.RedisSettings.MainServers[0].Connection.RPush("test_queue1", "Value1")
+	cache.RedisSettings.MainServers[0].Connection.RPush("test_queue1", "Value2")
+	cache.RedisSettings.MainServers[0].Connection.RPush("test_queue1", "Value3")
+	cache.RedisSettings.MainServers[0].Connection.RPush("test_queue1", "Value4")
+	cache.RedisSettings.MainServers[0].Connection.RPush("test_queue1", "Value5")
+	cache.RedisSettings.MainServers[0].Connection.RPush("test_queue1", "Value6")
+
+	val, err = cache.GetQueueBatch("test_queue1", 4)
+
+	if err != nil {
+		t.Errorf(
+			"Can not read queue 'test_queue1' over GetQueueBatch: %s",
+			err,
+		)
+	} else if len(val) != 4 {
+		t.Errorf(
+			"Wrong list length from 'test_queue1' over GetQueueBatch: expected 4, got '%d'",
+			len(val),
+		)
+	} else if val[0] != "Value1" {
+		t.Errorf(
+			"Wrong data read [0] from 'test_queue1' over GetQueueBatch: expected 'Value1', got '%s'",
+			val[0],
+		)
+	} else if val[1] != "Value2" {
+		t.Errorf(
+			"Wrong data read [1] from 'test_queue1' over GetQueueBatch: expected 'Value2', got '%s'",
+			val[1],
+		)
+	} else if val[2] != "Value3" {
+		t.Errorf(
+			"Wrong data read [2] from 'test_queue1' over GetQueueBatch: expected 'Value3', got '%s'",
+			val[2],
+		)
+	} else if val[3] != "Value4" {
+		t.Errorf(
+			"Wrong data read [3] from 'test_queue1' over GetQueueBatch: expected 'Value4', got '%s'",
+			val[3],
+		)
+	}
+
+	val, err = cache.GetQueueBatch("test_queue1", 4)
+
+	if err != nil {
+		t.Errorf(
+			"Can not read queue 'test_queue1' over GetQueueBatch: %s",
+			err,
+		)
+	} else if len(val) != 2 {
+		t.Errorf(
+			"Wrong list length from 'test_queue1' over GetQueueBatch: expected 2, got '%d'",
+			len(val),
+		)
+	} else if val[0] != "Value5" {
+		t.Errorf(
+			"Wrong data read [0] from 'test_queue1' over GetQueueBatch: expected 'Value5', got '%s'",
+			val[0],
+		)
+	} else if val[1] != "Value6" {
+		t.Errorf(
+			"Wrong data read [1] from 'test_queue1' over GetQueueBatch: expected 'Value6', got '%s'",
+			val[1],
+		)
+	}
+
 
 	cache.CleanQueue("test_queue1")
 }

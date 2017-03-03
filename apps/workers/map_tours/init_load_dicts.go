@@ -16,14 +16,14 @@ func (worker *MapToursWorker) LoadDictData() {
 
 	activeTownsIds, err = db.QueryCitiesIds("active")
 	if err != nil {
-		log.Error.Fatal("Can not read SletatCities data.")
+		log.Error.Fatal("Can not read SletatCities data.", err)
 	}
 
 	activeNamePicturesHotelsIds, err = db.QueryHotelsIds(
 		"active AND images_count > 0 AND name IS NOT NULL AND name != ''",
 	)
 	if err != nil {
-		log.Error.Fatal("Can not read SletatHotels data.")
+		log.Error.Fatal("Can not read SletatHotels data.", err)
 	}
 
 	activeDepartCitiesIds, err = db.QueryDepartCitiesIds("active OR active_for_partners")

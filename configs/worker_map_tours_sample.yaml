@@ -1,0 +1,3 @@
+worker_first_thread_id: 0
+worker_threads_count: 4
+all_threads_count: 4

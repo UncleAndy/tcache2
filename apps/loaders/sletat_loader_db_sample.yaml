@@ -1,5 +1,0 @@
-host: 'localhost'
-port: 5433
-dbname: 'yt_development'
-user: 'postgres'
-password: ''
