@@ -5,7 +5,6 @@ import (
 	"strings"
 	"fmt"
 	"reflect"
-	"github.com/hjr265/redsync.go/redsync"
 	"github.com/uncleandy/tcache2/cache"
 	"github.com/uncleandy/tcache2/db"
 )
@@ -342,11 +341,7 @@ func TourUnEscaped(source string, symbol string, code string) string {
 	return strings.Replace(source, code, symbol, -1)
 }
 
-func LockTourUpdate(template string, id uint64) *redsync.Mutex {
-	mutex, err := cache.NewMutex(fmt.Sprintf(template, id))
-	if err != nil {
-		return nil
-	}
-	mutex.Lock()
+func TourUpdateLocker(template string, id uint64) *cache.RedisMutex {
+	mutex := cache.NewMutex(fmt.Sprintf(template, id))
 	return mutex
 }

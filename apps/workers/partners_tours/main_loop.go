@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"gopkg.in/redis.v4"
 	"strconv"
-	"github.com/hjr265/redsync.go/redsync"
 )
 
 const (
@@ -92,7 +91,6 @@ func (worker *PartnersToursWorker) TourProcess(tour *tours.TourPartners) {
 		)
 	}
 
-	var mutex *redsync.Mutex
 	if err != nil {
 		// Add new tour
 		id_tour, err := tour.GenId()
@@ -100,7 +98,9 @@ func (worker *PartnersToursWorker) TourProcess(tour *tours.TourPartners) {
 			log.Error.Fatal("Error GenID for tour:", err)
 		}
 
-		mutex = worker.LockTourUpdate(id_tour)
+		mutex := worker.LockTourUpdate(id_tour)
+		mutex.Lock()
+		defer mutex.Unlock()
 		cache.Set(crc,
 			fmt.Sprintf(PartnersTourIDKeyTemplate, tour.KeyData()),
 			strconv.FormatUint(id_tour, 10))
@@ -122,7 +122,9 @@ func (worker *PartnersToursWorker) TourProcess(tour *tours.TourPartners) {
 			)
 		}
 
-		mutex = worker.LockTourUpdate(id_tour)
+		mutex := worker.LockTourUpdate(id_tour)
+		mutex.Lock()
+		defer mutex.Unlock()
 		// Compare old price with new price
 		old_price_data, err_price := cache.Get(id_tour, fmt.Sprintf(PartnersTourPriceDataKeyTemplate, id_tour))
 		if err_price != nil && err_price != redis.Nil {
@@ -140,7 +142,6 @@ func (worker *PartnersToursWorker) TourProcess(tour *tours.TourPartners) {
 			log.Error.Print("Error compare prices:", err)
 		}
 	}
-	if (mutex != nil) { mutex.Unlock() }
 }
 
 func (worker *PartnersToursWorker) IsPrimary() bool {
@@ -156,9 +157,9 @@ func (worker *PartnersToursWorker) ToUpdateQueue(id uint64) error {
 }
 
 
-func (worker *PartnersToursWorker) LockTourUpdate(id uint64) *redsync.Mutex {
-	mutex, err := cache.NewMutex(fmt.Sprintf(PartnersTourUpdateMutexTemplate, id))
-	if err != nil {
+func (worker *PartnersToursWorker) LockTourUpdate(id uint64) *cache.RedisMutex {
+	mutex := cache.NewMutex(fmt.Sprintf(PartnersTourUpdateMutexTemplate, id))
+	if mutex == nil {
 		return nil
 	}
 	mutex.Lock()

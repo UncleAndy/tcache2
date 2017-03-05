@@ -16,12 +16,14 @@ const (
 
 // Sync map tours data from DB to Redis
 func (worker *MapToursWorker) LoadToursData() {
+	log.Info.Println("Start load map tours data...")
 	db.CheckConnect()
 
 	var last_id uint64
 	var last_count int
 	last_id = 0
 	last_count = 1
+	all_count := 0
 	for last_count > 0 {
 		last_count = 0
 		rows, err := db.SendQuery(
@@ -31,7 +33,8 @@ func (worker *MapToursWorker) LoadToursData() {
 				meal_id, created_at, dpt_city_id, country_id, price_byr,
 				price_eur, price_usd, kid1age, kid2age, kid3age, price_updated_at,
 				tickets_included, has_econom_tickets_dpt, has_econom_tickets_rtn, hotel_is_in_stop,
-				fuel_surcharge_min, fuel_surcharge_max, room_name, ht_place_name, tour_url
+				fuel_surcharge_min, fuel_surcharge_max, COALESCE(room_name, ''),
+				COALESCE(ht_place_name, ''), COALESCE(tour_url, '')
 			FROM cached_sletat_tours
 			WHERE id > $1
 			ORDER BY id
@@ -116,7 +119,11 @@ func (worker *MapToursWorker) LoadToursData() {
 			last_count++
 		}
 		rows.Close()
+
+		all_count += last_count
+		log.Info.Println("Loaded map tours:", all_count)
 	}
+	log.Info.Println("Finish load map tours data.")
 }
 
 func (worker *MapToursWorker) SetCurrentID(id uint64) {

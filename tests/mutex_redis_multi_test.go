@@ -9,12 +9,7 @@ import (
 func TestMultiMutexLock(t *testing.T) {
 	init_test_redis_multi()
 
-	redis_mutex, err := cache.NewMutex("test_mutex")
-	if err != nil {
-		t.Error("Can not create redis mutex:", err)
-		return
-	}
-
+	redis_mutex := cache.NewMutex("test_mutex")
 	if redis_mutex == nil {
 		t.Error("Can not create redis mutex: is nil")
 		return
@@ -27,9 +22,9 @@ func TestMultiMutexLock(t *testing.T) {
 	check_pause_duration := 500 * time.Millisecond
 	start_test := make(chan bool)
 	go func() {
-		err := redis_mutex.Lock()
-		if err != nil {
-			println(err.Error())
+		locked := redis_mutex.Lock()
+		if !locked {
+			println("Can not lock.")
 		}
 		defer redis_mutex.Unlock()
 		start_test <- true
@@ -37,12 +32,7 @@ func TestMultiMutexLock(t *testing.T) {
 	}()
 	<- start_test
 
-	redis_mutex_dup, err := cache.NewMutex("test_mutex")
-	if err != nil {
-		t.Error("Can not create redis mutex:", err)
-		return
-	}
-
+	redis_mutex_dup := cache.NewMutex("test_mutex")
 	if redis_mutex_dup == nil {
 		t.Error("Can not create redis mutex: is nil")
 		return

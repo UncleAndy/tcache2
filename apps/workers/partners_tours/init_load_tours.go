@@ -16,6 +16,7 @@ const (
 // Sync partners tours data from DB to Redis
 // TODO: Tests process
 func (worker *PartnersToursWorker) LoadToursData() {
+	log.Info.Println("Start load partners tours data...")
 	db.CheckConnect()
 
 	// Load data town_id -> country_id
@@ -52,6 +53,7 @@ func (worker *PartnersToursWorker) LoadToursData() {
 	var last_count int
 	last_id = 0
 	last_count = 1
+	all_count := 0
 	for last_count > 0 {
 		last_count = 0
 		rows, err := db.SendQuery(
@@ -61,9 +63,11 @@ func (worker *PartnersToursWorker) LoadToursData() {
 				town_id, operator_id, price, hotel_id, tickets_included,
 				has_econom_tickets_dpt, has_econom_tickets_rtn, hotel_is_in_stop,
 				sletat_request_id, sletat_offer_id, few_econom_tickets_dpt,
-				few_econom_tickets_rtn, few_places_in_hotel, flags, description, tour_url,
- 				room_name, receiving_party, update_date, meal_id, meal_name, ht_place_name,
- 				created_at
+				few_econom_tickets_rtn, few_places_in_hotel, flags, COALESCE(description, ''),
+				COALESCE(tour_url, ''), COALESCE(room_name, ''),
+				COALESCE(receiving_party, ''),
+				COALESCE(update_date, '2001-01-01'), meal_id, meal_name,
+ 				COALESCE(ht_place_name, ''), created_at
 			FROM partners_tours
 			WHERE id > $1
 			ORDER BY id
@@ -148,7 +152,12 @@ func (worker *PartnersToursWorker) LoadToursData() {
 			last_count++
 		}
 		rows.Close()
+
+		all_count += last_count
+
+		log.Info.Println("Loaded partners tours:", all_count)
 	}
+	log.Info.Println("Finish load partners tours data.")
 }
 
 func (worker *PartnersToursWorker) SetCurrentID(id uint64) {

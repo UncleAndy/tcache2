@@ -6,7 +6,6 @@ import (
 	"hash/crc32"
 	"github.com/uncleandy/tcache2/cache"
 	"time"
-	"github.com/hjr265/redsync.go/redsync"
 )
 
 const (
@@ -168,6 +167,6 @@ func (t *TourBase) UpdateSQLString() string {
 	return t.UpdateSQLStringBy(&TourMapSQLFields)
 }
 
-func LockMapTourUpdate(id uint64) *redsync.Mutex {
-	return LockTourUpdate(MapTourUpdateMutexTemplate, id)
+func MapTourUpdateLocker(id uint64) *cache.RedisMutex {
+	return TourUpdateLocker(MapTourUpdateMutexTemplate, id)
 }

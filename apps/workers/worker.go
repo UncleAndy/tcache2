@@ -4,19 +4,20 @@ import (
 	"github.com/uncleandy/tcache2/cache"
 	"github.com/uncleandy/tcache2/db"
 	"github.com/uncleandy/tcache2/apps/workers/worker_base"
-	"github.com/uncleandy/tcache2/apps/workers/partners_tours"
+//	"github.com/uncleandy/tcache2/apps/workers/partners_tours"
 	"github.com/uncleandy/tcache2/apps/workers/map_tours"
 )
 
 func InitWorkers() {
 	worker_base.Workers = []worker_base.WorkerBaseInterface{
 		&map_tours.MapToursWorker{},
-		&partners_tours.PartnersToursWorker{},
+//		&partners_tours.PartnersToursWorker{},
 	}
 }
 
 func main() {
 	cache.InitFromEnv()
+	cache.RedisInit()
 	db.Init()
 
 	InitWorkers()

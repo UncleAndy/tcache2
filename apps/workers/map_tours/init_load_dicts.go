@@ -12,6 +12,7 @@ var (
 )
 
 func (worker *MapToursWorker) LoadDictData() {
+	log.Info.Println("Start load dict data...")
 	var err error
 
 	activeTownsIds, err = db.QueryCitiesIds("active")
@@ -30,6 +31,7 @@ func (worker *MapToursWorker) LoadDictData() {
 	if err != nil {
 		log.Error.Fatal(err)
 	}
+	log.Info.Println("Finish load dict data.")
 }
 
 func IsTownGood(id int) bool {

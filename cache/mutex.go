@@ -1,25 +1,57 @@
 package cache
 
 import (
-	"net"
-	"github.com/hjr265/redsync.go/redsync"
-	"github.com/uncleandy/tcache2/log"
-	"errors"
+	"time"
+	"gopkg.in/redis.v4"
 )
 
-func NewMutex(name string) (*redsync.Mutex, error) {
-	pools := []net.Addr{}
-	addr, err := net.ResolveTCPAddr("tcp", RedisSettings.MainServers[0].Addr)
-	if err != nil {
-		log.Error.Print("Error resolve Redis server address", RedisSettings.MainServers[0].Addr, ":", err)
-	} else {
-		pools = append(pools, addr)
+type RedisMutex struct {
+	Name string
+	Server *redis.Client
+	Delay time.Duration
+	Expiry time.Duration
+	Try int
+}
+
+func (mutex *RedisMutex) Lock() bool {
+	var locked bool
+
+	if mutex.Delay == 0 {
+		mutex.Delay = 100 * time.Millisecond
 	}
 
-	if len(pools) <= 0 {
-		log.Error.Fatal("Can not create Redis mutex!")
-		return nil, errors.New("Can not create Redis mutex!")
+	if mutex.Try == 0 {
+		mutex.Try = 50
 	}
 
-	return redsync.NewMutex(name, pools)
+	counter := mutex.Try
+
+	start := true
+	locked = true
+	for start || (!locked && counter > 0) {
+		if !locked {
+			time.Sleep(mutex.Delay)
+		}
+
+		locked = mutex.Server.SetNX(mutex.Name, "1", mutex.Expiry).Val()
+
+		start = false
+		counter--
+	}
+
+	return locked
+}
+
+func (mutex *RedisMutex) Unlock() {
+	mutex.Server.Del(mutex.Name)
+}
+
+
+func NewMutex(name string) (*RedisMutex) {
+	mutex := RedisMutex{
+		Name: name,
+		Server: RedisSettings.MainServers[0].Connection,
+	}
+
+	return &mutex
 }

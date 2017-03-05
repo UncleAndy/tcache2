@@ -22,7 +22,8 @@ func (post_worker *PostMapToursWorker) ProcessPriceLogs(tour_id uint64) {
 		return
 	}
 
-	mutex := tours.LockMapTourUpdate(tour_id)
+	mutex := tours.MapTourUpdateLocker(tour_id)
+	mutex.Lock()
 	defer mutex.Unlock()
 
 	price_data_key := fmt.Sprintf(map_tours.MapTourPriceDataKeyTemplate, tour_id)
