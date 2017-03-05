@@ -1,5 +1,5 @@
 all: sletat_loader manager worker data2db_manager data2db_worker post_map_tours_price_logs post_partners_tours_clean
-sletat_loader: apps/loaders/sletat_loader.go
+sletat_loader: apps/loaders/sletat_loader.go apps/loaders/sletat/*
 	go build apps/loaders/sletat_loader.go
 manager: apps/workers/manager.go apps/workers/*
 	go build apps/workers/manager.go

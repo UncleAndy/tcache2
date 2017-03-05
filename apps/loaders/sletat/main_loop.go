@@ -5,6 +5,10 @@ import (
 	"github.com/uncleandy/tcache2/log"
 )
 
+var (
+	ForceStopFlag = false
+)
+
 func MainLoop() {
 	finish_channel := make(chan bool)
 

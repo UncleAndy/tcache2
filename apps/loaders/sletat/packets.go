@@ -81,6 +81,10 @@ func LoadPackets(t string) (chan SletatPacket) {
 
 			log.Info.Println("fetchPackets packet to work")
 			packets <- packet
+
+			if ForceStopFlag {
+				break
+			}
 		}
 
 		close(packets)

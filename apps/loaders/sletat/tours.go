@@ -80,7 +80,7 @@ func FetchTours(packetId string) (chan tours.TourBase, error) {
 		defer gzipReader.Close()
 
 		decoder := xml.NewDecoder(gzipReader)
-		for {
+		for !ForceStopFlag {
 			t, err := decoder.Token()
 			if err != nil && err != io.EOF {
 				log.Error.Println(err)
