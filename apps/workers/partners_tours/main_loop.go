@@ -25,6 +25,10 @@ var (
 	ForceStopThreads = false
 )
 
+func (worker *PartnersToursWorker) Stop() {
+	ForceStopThreads = true
+}
+
 func (worker *PartnersToursWorker) MainLoop() {
 	// Create threads & fill threads array of channels
 	worker.InitThreads()

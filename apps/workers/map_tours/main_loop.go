@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"gopkg.in/redis.v4"
 	"strconv"
+	"sync"
 )
 
 const (
@@ -19,6 +20,7 @@ const (
 	MapTourInsertQueue = "map_tours_insert"
 	MapTourUpdateQueue = "map_tours_update"
 	MapTourDeleteQueue = "map_tours_delete"
+	MapTourBatchSize = 100
 )
 
 var (
@@ -26,15 +28,28 @@ var (
 	LocksCounter = 0
 )
 
+func (worker *MapToursWorker) Stop() {
+	ForceStopThreads = true
+}
+
 func (worker *MapToursWorker) MainLoop() {
 	// Create threads & fill threads array of channels
 	worker.InitThreads()
 }
 
 func (worker *MapToursWorker) InitThreads() {
+	wg := sync.WaitGroup{}
+	wg.Add(worker.Settings.WorkerThreadsCount)
 	for i := 0; i < worker.Settings.WorkerThreadsCount; i++ {
-		worker.Thread(worker.Settings.WorkerFirstThreadId + i)
+		thread_index := worker.Settings.WorkerFirstThreadId + i
+		go func() {
+			worker.Thread(thread_index)
+			wg.Done()
+		}()
 	}
+
+	wg.Wait()
+	worker.FinishChanel <- true
 }
 
 func (worker *MapToursWorker) SendTour(tour_str string) {
@@ -61,37 +76,38 @@ func (worker *MapToursWorker) SendTour(tour_str string) {
 }
 
 func (worker *MapToursWorker) Thread(thread_index int) {
-	go func() {
-		thread_queue := fmt.Sprintf(ThreadMapToursQueueTemplate, thread_index)
-		tour := tours.TourMap{}
-		for !ForceStopThreads {
-			tour_str, err := cache.GetQueue(thread_queue)
-			log.Info.Println("Process map tour...")
-			if err != nil || tour_str == "" {
-				time.Sleep(1 * time.Second)
-				continue
-			}
+	thread_queue := fmt.Sprintf(ThreadMapToursQueueTemplate, thread_index)
+	tour := tours.TourMap{}
+	for !ForceStopThreads {
+		tours, err := cache.GetQueueBatch(thread_queue, MapTourBatchSize)
+		// log.Info.Println("Process map tours...")
+		// log.Info.Printf("Queue - %s, batch - %d\n", thread_queue, len(tours))
+		if err != nil || len(tours) == 0 {
+			time.Sleep(1 * time.Second)
+			continue
+		}
 
-			log.Info.Println("FromString...")
+		for _, tour_str := range tours {
+			// log.Info.Println("FromString...")
 			err = tour.FromString(tour_str)
-			log.Info.Println("FromString done.")
+			// log.Info.Println("FromString done.")
 			if err != nil {
 				log.Error.Print("Load tour from loader queue error:", err)
 				continue
 			}
 
 			worker.TourProcess(&tour)
-			log.Info.Println("Process map tour finish.")
+			// log.Info.Println("Process map tour finish.")
 		}
-	}()
+	}
 }
 
 func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
 	crc := tour.KeyDataCRC32()
 
-	log.Info.Println("Get id from cache...")
+	//log.Info.Println("Get id from cache...")
 	id_tour_str, err := cache.Get(crc, fmt.Sprintf(MapTourIDKeyTemplate, tour.KeyData()))
-	log.Info.Println("Get id from cache done.")
+	//log.Info.Println("Get id from cache done.")
 	if err != nil && err != redis.Nil {
 		log.Error.Print(
 			"Error read map tour from key ",
@@ -103,19 +119,19 @@ func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
 
 	if err != nil {
 		// Add new tour
-		log.Info.Println("Gen id...")
+		//log.Info.Println("Gen id...")
 		id_tour, err := tour.GenId()
-		log.Info.Println("Gen id done.")
+		//log.Info.Println("Gen id done.")
 		if err != nil {
 			log.Error.Fatal("Error GenID for tour:", err)
 		}
 
-		log.Info.Println("LockTourUpdate...", id_tour)
+		//log.Info.Println("LockTourUpdate...", id_tour)
 		mutex := worker.TourUpdateLock(id_tour)
 		defer mutex.Unlock()
-		log.Info.Println("LockTourUpdate done.", id_tour)
+		//log.Info.Println("LockTourUpdate done.", id_tour)
 
-		log.Info.Println("Save tour data...")
+		//log.Info.Println("Save tour data...")
 		cache.Set(crc,
 			fmt.Sprintf(MapTourIDKeyTemplate, tour.KeyData()), strconv.FormatUint(id_tour, 10))
 		cache.Set(id_tour,
@@ -123,7 +139,7 @@ func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
 		cache.Set(id_tour,
 			fmt.Sprintf(MapTourPriceDataKeyTemplate, id_tour), tour.PriceData())
 		worker.ToInsertQueue(id_tour)
-		log.Info.Println("Save tour data done.")
+		//log.Info.Println("Save tour data done.")
 	} else {
 		// Compare old price with new price
 		id_tour, err := strconv.ParseUint(id_tour_str, 10, 64)
@@ -136,34 +152,34 @@ func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
 			)
 		}
 
-		log.Info.Println("LockTourUpdate...", id_tour)
+		//log.Info.Println("LockTourUpdate...", id_tour)
 		mutex := worker.TourUpdateLock(id_tour)
 		defer mutex.Unlock()
-		log.Info.Println("LockTourUpdate done.", id_tour)
+		//log.Info.Println("LockTourUpdate done.", id_tour)
 
-		log.Info.Println("Get old price data...")
+		//log.Info.Println("Get old price data...")
 		old_price_data, err_price := cache.Get(id_tour, fmt.Sprintf(MapTourPriceDataKeyTemplate, id_tour))
-		log.Info.Println("Get old price data done.")
+		//log.Info.Println("Get old price data done.")
 		if err_price != nil && err_price != redis.Nil {
 			log.Error.Print("Error read PriceData for tour ", id_tour, ":", err)
 		}
 
-		log.Info.Println("Compare prices...")
+		//log.Info.Println("Compare prices...")
 		is_bigger, err := tour.PriceBiggerThen(old_price_data)
-		log.Info.Println("Compare prices done.")
+		//log.Info.Println("Compare prices done.")
 		if err == nil || err_price == redis.Nil {
 			if is_bigger && err_price != redis.Nil {
-				log.Info.Println("Add data to price log...")
+				//log.Info.Println("Add data to price log...")
 				cache.RPush(id_tour, fmt.Sprintf(MapTourPriceLogKeyTemplate, id_tour), tour.PriceData())
-				log.Info.Println("Add data to price log done.")
+				//log.Info.Println("Add data to price log done.")
 			} else {
 				// Save to price data
-				log.Info.Println("Set new price data...")
+				//log.Info.Println("Set new price data...")
 				cache.Set(id_tour, fmt.Sprintf(MapTourPriceDataKeyTemplate, id_tour), tour.PriceData())
-				log.Info.Println("Set new price data done.")
-				log.Info.Println("Add tour to update queue...")
+				//log.Info.Println("Set new price data done.")
+				//log.Info.Println("Add tour to update queue...")
 				worker.ToUpdateQueue(id_tour)
-				log.Info.Println("Add tour to update queue done.")
+				//log.Info.Println("Add tour to update queue done.")
 			}
 		} else {
 			log.Error.Print("Error compare prices:", err)
@@ -192,7 +208,7 @@ func (worker *MapToursWorker) TourUpdateLock(id uint64) *cache.RedisMutex {
 	locked = false
 
 	for start || (!locked && counter > 0) {
-		if !locked {
+		if !start && !locked {
 			log.Error.Println("Repeat for redis mutex...")
 		}
 		mutex = tours.MapTourUpdateLocker(id)

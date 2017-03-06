@@ -6,6 +6,7 @@ import (
 	"os"
 	"syscall"
 	"os/signal"
+	"github.com/uncleandy/tcache2/log"
 )
 
 func SignalsInit() (chan os.Signal) {
@@ -21,7 +22,7 @@ func SignalsInit() (chan os.Signal) {
 func SignalsProcess(signals chan os.Signal) {
 	<- signals
 
-	println("Detect stop command. Please, wait...")
+	log.Info.Println("Detect stop command. Please, wait...")
 
 	sletat.ForceStopFlag = true
 }
@@ -34,4 +35,6 @@ func main() {
 	cache.RedisInit()
 	sletat.Init()
 	sletat.MainLoop()
+
+	log.Info.Println("Finished")
 }

@@ -19,7 +19,7 @@ type PartnersToursWorker struct {
 
 func (worker *PartnersToursWorker) Init() {
 	worker.LoadDictData()
-	worker.LoadToursData()
+	//worker.LoadToursData()
 	worker.LoadWorkerConfig()
 
 	worker.FinishChanel = make(chan bool)

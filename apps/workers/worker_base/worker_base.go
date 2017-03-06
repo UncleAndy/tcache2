@@ -8,6 +8,7 @@ import (
 
 type WorkerBaseInterface interface {
 	Init()
+	Stop()
 	LoadWorkerConfig()
 	LoadDictData()
 	MainLoop()

@@ -9,6 +9,7 @@ import (
 	"os"
 	"syscall"
 	"os/signal"
+	"github.com/uncleandy/tcache2/log"
 )
 
 func InitManagers() {
@@ -39,7 +40,7 @@ func SignalsInit() (chan os.Signal) {
 func SignalsProcess(signals chan os.Signal) {
 	<- signals
 
-	println("Detect stop command. Please, wait...")
+	log.Info.Println("Detect stop command. Please, wait...")
 
 	worker_base.ForceStopManagerLoop = true
 }
@@ -54,4 +55,6 @@ func main() {
 	InitManagers()
 	InitManagersConfigs()
 	worker_base.RunManagerLoop()
+
+	log.Info.Println("Finished")
 }
