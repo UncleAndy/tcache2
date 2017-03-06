@@ -94,6 +94,8 @@ func (worker *PartnersToursWorker) Thread(thread_index int) {
 }
 
 func (worker *PartnersToursWorker) TourProcess(tour *tours.TourPartners) {
+	InToursCounter++
+
 	if IsSkipTour(tour) {
 		return
 	}

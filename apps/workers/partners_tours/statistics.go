@@ -6,9 +6,17 @@ import (
 	"github.com/uncleandy/tcache2/cache"
 	"github.com/uncleandy/tcache2/log"
 	"fmt"
+	"strconv"
+)
+
+var (
+	InToursCounter = int64(0)
+	LastStatTime time.Time
 )
 
 func (worker *PartnersToursWorker) RunStatisticLoop() {
+	LastStatTime = time.Now()
+
 	ticker := time.NewTicker(10 * time.Second)
 	go func(){
 		for !ForceStopThreads {
@@ -23,13 +31,23 @@ func (worker *PartnersToursWorker) RunStatisticLoop() {
 }
 
 func (worker *PartnersToursWorker) StatisticsOutput() {
+	delta := time.Since(LastStatTime)
+	speed := float64(InToursCounter) / delta.Seconds()
+	InToursCounter = 0
+	LastStatTime = time.Now()
+
+	log.Info.Printf("STAT: Partners tours workers current speed = %.0f t/s\n", speed)
+
+	sizes := ""
+	sep := ""
 	for i := 0; i < worker.Settings.WorkerThreadsCount; i++ {
 		workerQueueToursName := fmt.Sprintf(ThreadPartnersToursQueueTemplate, i)
 
 		cache.QueueSizesUpdateAll(workerQueueToursName)
 		queue_length := cache.QueueSize(workerQueueToursName)
 
-		log.Info.Printf("STAT: Queue size for partners thread %d = %d\n", i, queue_length)
+		sizes = sizes + sep + strconv.FormatInt(queue_length, 10)
+		sep = ", "
 	}
-
+	log.Info.Printf("STAT: Queue sizes for partners tours thread: (%s)\n", sizes)
 }

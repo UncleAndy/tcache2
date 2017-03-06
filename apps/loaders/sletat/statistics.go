@@ -39,6 +39,7 @@ func StatisticsOutput() {
 	delta := time.Since(LastStatTime)
 	speed := float64(InToursCounter) / delta.Seconds()
 	InToursCounter = 0
+	LastStatTime = time.Now()
 
 	log.Info.Printf(
 		"STAT: Queue size = %d, idle counter = %d, wait counter = %d (speed: %.0f t/s)\n",

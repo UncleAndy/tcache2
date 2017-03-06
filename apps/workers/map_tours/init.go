@@ -18,9 +18,22 @@ type MapToursWorker struct {
 }
 
 func (worker *MapToursWorker) Init() {
+	with_data := false
+	for _, arg := range os.Args {
+		if arg == "-d" {
+			with_data = true
+			break
+		}
+	}
+
 	worker.LoadDictData()
-	worker.LoadToursData()
+
+	if with_data {
+		worker.LoadToursData()
+	}
+
 	worker.LoadWorkerConfig()
+
 	worker.RunStatisticLoop()
 
 	worker.FinishChanel = make(chan bool)

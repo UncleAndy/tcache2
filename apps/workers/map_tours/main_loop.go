@@ -95,6 +95,8 @@ func (worker *MapToursWorker) Thread(thread_index int) {
 }
 
 func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
+	InToursCounter++
+
 	if IsSkipTour(tour) {
 		return
 	}
