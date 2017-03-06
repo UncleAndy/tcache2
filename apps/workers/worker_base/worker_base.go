@@ -27,7 +27,7 @@ type WorkerSettings struct {
 var (
 	Workers []WorkerBaseInterface
 	ForceStopManagerLoop = false
-	ToursBatchSize = int64(100)
+	ToursBatchSize = int64(1000)
 )
 
 func RunWorkers() {

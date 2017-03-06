@@ -11,6 +11,8 @@ import (
 type SletatSettings struct {
 	Login 		string		`yaml:"login"`
 	Password 	string		`yaml:"password"`
+	Threads    	int		`yaml:"threads"`
+	QueueMaxSize	int64		`yaml:"queue_max_size"`
 }
 
 func Init() {

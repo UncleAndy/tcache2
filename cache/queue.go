@@ -2,6 +2,7 @@ package cache
 
 import (
 	"gopkg.in/redis.v4"
+	"fmt"
 )
 
 const (
@@ -127,6 +128,10 @@ func GetQueue(queue string) (string, error) {
 }
 
 func GetQueueBatch(queue string, batch_size int64) ([]string, error) {
+	mutex := NewMutex(fmt.Sprintf("lock_queue_batch:%s", queue))
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	QueueSizesUpdate(queue, &RedisSettings.MainServers)
 	maxQueueServer, err := MaxQueueMainServerSearch(queue)
 	var val []string

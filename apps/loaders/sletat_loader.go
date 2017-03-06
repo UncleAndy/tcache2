@@ -33,6 +33,9 @@ func main() {
 
 	cache.InitFromEnv()
 	cache.RedisInit()
+
+	sletat.RunStatisticLoop()
+
 	sletat.Init()
 	sletat.MainLoop()
 

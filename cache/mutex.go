@@ -11,6 +11,7 @@ type RedisMutex struct {
 	Delay time.Duration
 	Expiry time.Duration
 	Try int
+	NoWait bool
 }
 
 func (mutex *RedisMutex) Lock() bool {
@@ -34,6 +35,10 @@ func (mutex *RedisMutex) Lock() bool {
 		}
 
 		locked = mutex.Server.SetNX(mutex.Name, "1", mutex.Expiry).Val()
+
+		if mutex.NoWait {
+			return locked
+		}
 
 		start = false
 		counter--

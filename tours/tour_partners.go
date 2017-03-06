@@ -12,6 +12,7 @@ const (
 	TourPartnersKeyDataSeparator = "|"
 	TourPartnersKeyDataSeparatorCode = "&#124;"
 	TourPartnersRedisGenIdKey = "serial_partners_tour"
+	PartnersTourUpdateMutexTemplate = "partners_update_%d"
 )
 
 type TourPartners struct {
@@ -177,4 +178,8 @@ func (t *TourPartners) InsertSQLDataSet() string {
 
 func (t *TourPartners) UpdateSQLString() string {
 	return t.UpdateSQLStringBy(&TourPartnersSQLFields)
+}
+
+func PartnersTourUpdateLocker(id uint64) *cache.RedisMutex {
+	return TourUpdateLocker(PartnersTourUpdateMutexTemplate, id)
 }

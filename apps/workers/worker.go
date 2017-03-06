@@ -4,7 +4,7 @@ import (
 	"github.com/uncleandy/tcache2/cache"
 	"github.com/uncleandy/tcache2/db"
 	"github.com/uncleandy/tcache2/apps/workers/worker_base"
-//	"github.com/uncleandy/tcache2/apps/workers/partners_tours"
+	"github.com/uncleandy/tcache2/apps/workers/partners_tours"
 	"github.com/uncleandy/tcache2/apps/workers/map_tours"
 	"os"
 	"syscall"
@@ -15,7 +15,7 @@ import (
 func InitWorkers() {
 	worker_base.Workers = []worker_base.WorkerBaseInterface{
 		&map_tours.MapToursWorker{},
-//		&partners_tours.PartnersToursWorker{},
+		&partners_tours.PartnersToursWorker{},
 	}
 }
 func SignalsWorkerInit() (chan os.Signal) {
@@ -50,5 +50,6 @@ func main() {
 	InitWorkers()
 	worker_base.RunWorkers()
 	worker_base.WaitWorkersFinish()
+
 	log.Info.Println("Finished")
 }

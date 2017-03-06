@@ -9,19 +9,19 @@ import (
 	"github.com/uncleandy/tcache2/tours"
 	"github.com/uncleandy/tcache2/cache"
 	"sort"
+	"time"
 )
 
 const (
-	workersNum = 2
 	LoaderQueueToursName = "tours_download_list"
 )
 
 func LoadTours(packets chan SletatPacket, finish_channel chan bool) {
 	wg := new(sync.WaitGroup)
-	wg.Add(workersNum)
+	wg.Add(sletatSettings.Threads)
 
 	// Run multiply workers to read concurrently from one channel.
-	for i := 0; i < workersNum; i++ {
+	for i := 0; i < sletatSettings.Threads; i++ {
 		go func() {
 			for packet := range packets {
 				log.Info.Println("fetchTours Run ...")
@@ -81,6 +81,20 @@ func FetchTours(packetId string) (chan tours.TourBase, error) {
 
 		decoder := xml.NewDecoder(gzipReader)
 		for !ForceStopFlag {
+			for !ForceStopFlag {
+				cache.QueueSizesUpdateAll(LoaderQueueToursName)
+				queue_length := cache.QueueSize(LoaderQueueToursName)
+
+				if queue_length < sletatSettings.QueueMaxSize {
+					break
+				} else {
+					log.Info.Printf("Loader queue oversized (%d). Wait 5 second...\n", queue_length)
+					WaitCounter++
+					time.Sleep(5 * time.Second)
+					log.Info.Println("Continue check loader queue size.")
+				}
+			}
+
 			t, err := decoder.Token()
 			if err != nil && err != io.EOF {
 				log.Error.Println(err)
@@ -110,6 +124,7 @@ func FetchTours(packetId string) (chan tours.TourBase, error) {
 }
 
 func TourToQueue(tour *tours.TourBase) {
+	InToursCounter++
 	cache.AddQueue(LoaderQueueToursName, tour.ToString())
 }
 

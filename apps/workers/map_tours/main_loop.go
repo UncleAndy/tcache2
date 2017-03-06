@@ -25,7 +25,6 @@ const (
 
 var (
 	ForceStopThreads = false
-	LocksCounter = 0
 )
 
 func (worker *MapToursWorker) Stop() {
@@ -61,10 +60,6 @@ func (worker *MapToursWorker) SendTour(tour_str string) {
 		return
 	}
 
-	if IsSkipTour(&tour) {
-		return
-	}
-
 	crc := tour.KeyDataCRC32()
 	thread_index := crc % uint64(worker.Settings.AllThreadsCount)
 	thread_queue := fmt.Sprintf(ThreadMapToursQueueTemplate, thread_index)
@@ -76,33 +71,34 @@ func (worker *MapToursWorker) SendTour(tour_str string) {
 }
 
 func (worker *MapToursWorker) Thread(thread_index int) {
+	log.Info.Printf("Start map tours worker %d\n", thread_index)
 	thread_queue := fmt.Sprintf(ThreadMapToursQueueTemplate, thread_index)
 	tour := tours.TourMap{}
 	for !ForceStopThreads {
 		tours, err := cache.GetQueueBatch(thread_queue, MapTourBatchSize)
-		// log.Info.Println("Process map tours...")
-		// log.Info.Printf("Queue - %s, batch - %d\n", thread_queue, len(tours))
 		if err != nil || len(tours) == 0 {
 			time.Sleep(1 * time.Second)
 			continue
 		}
 
 		for _, tour_str := range tours {
-			// log.Info.Println("FromString...")
 			err = tour.FromString(tour_str)
-			// log.Info.Println("FromString done.")
 			if err != nil {
 				log.Error.Print("Load tour from loader queue error:", err)
 				continue
 			}
 
 			worker.TourProcess(&tour)
-			// log.Info.Println("Process map tour finish.")
 		}
 	}
+	log.Info.Printf("Finish map tours worker %d\n", thread_index)
 }
 
 func (worker *MapToursWorker) TourProcess(tour *tours.TourMap) {
+	if IsSkipTour(tour) {
+		return
+	}
+
 	crc := tour.KeyDataCRC32()
 
 	//log.Info.Println("Get id from cache...")
@@ -209,7 +205,7 @@ func (worker *MapToursWorker) TourUpdateLock(id uint64) *cache.RedisMutex {
 
 	for start || (!locked && counter > 0) {
 		if !start && !locked {
-			log.Error.Println("Repeat for redis mutex...")
+			log.Error.Println("Repeat for redis mutex (map)...")
 		}
 		mutex = tours.MapTourUpdateLocker(id)
 		locked = mutex.Lock()
@@ -219,10 +215,8 @@ func (worker *MapToursWorker) TourUpdateLock(id uint64) *cache.RedisMutex {
 	}
 
 	if !locked {
-		log.Error.Fatalln("Can not lock redis mutex.", LocksCounter)
+		log.Error.Fatalln("Can not lock redis mutex.")
 	}
-
-	LocksCounter++
 
 	return mutex
 }

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"gopkg.in/redis.v4"
 	"strconv"
+	"sync"
 )
 
 const (
@@ -19,6 +20,7 @@ const (
 	PartnersTourUpdateQueue = "partners_tours_update"
 	PartnersTourDeleteQueue = "partners_tours_delete"
 	PartnersTourUpdateMutexTemplate = "partners_update_%d"
+	PartnersTourBatchSize = 100
 )
 
 var (
@@ -35,9 +37,18 @@ func (worker *PartnersToursWorker) MainLoop() {
 }
 
 func (worker *PartnersToursWorker) InitThreads() {
+	wg := sync.WaitGroup{}
+	wg.Add(worker.Settings.WorkerThreadsCount)
 	for i := 0; i < worker.Settings.WorkerThreadsCount; i++ {
-		worker.Thread(worker.Settings.WorkerFirstThreadId + i)
+		thread_index := worker.Settings.WorkerFirstThreadId + i
+		go func() {
+			worker.Thread(thread_index)
+			wg.Done()
+		}()
 	}
+
+	wg.Wait()
+	worker.FinishChanel <- true
 }
 
 func (worker *PartnersToursWorker) SendTour(tour_str string) {
@@ -49,10 +60,6 @@ func (worker *PartnersToursWorker) SendTour(tour_str string) {
 		return
 	}
 
-	if IsSkipTour(&tour) {
-		return
-	}
-
 	crc := tour.KeyDataCRC32()
 	thread_index := crc % uint64(worker.Settings.AllThreadsCount)
 	thread_queue := fmt.Sprintf(ThreadPartnersToursQueueTemplate, thread_index)
@@ -61,16 +68,18 @@ func (worker *PartnersToursWorker) SendTour(tour_str string) {
 }
 
 func (worker *PartnersToursWorker) Thread(thread_index int) {
-	go func() {
-		thread_queue := fmt.Sprintf(ThreadPartnersToursQueueTemplate, thread_index)
-		tour := tours.TourPartners{}
-		for !ForceStopThreads {
-			tour_str, err := cache.GetQueue(thread_queue)
-			if err != nil || tour_str == "" {
-				time.Sleep(1 * time.Second)
-				continue
-			}
+	log.Info.Printf("Start partners tours worker %d\n", thread_index)
 
+	thread_queue := fmt.Sprintf(ThreadPartnersToursQueueTemplate, thread_index)
+	tour := tours.TourPartners{}
+	for !ForceStopThreads {
+		tours, err := cache.GetQueueBatch(thread_queue, PartnersTourBatchSize)
+		if err != nil || len(tours) == 0 {
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		for _, tour_str := range tours {
 			err = tour.FromString(tour_str)
 			if err != nil {
 				log.Error.Print("Load tour from loader queue error:", err)
@@ -79,10 +88,16 @@ func (worker *PartnersToursWorker) Thread(thread_index int) {
 
 			worker.TourProcess(&tour)
 		}
-	}()
+	}
+
+	log.Info.Printf("Finish partners tours worker %d\n", thread_index)
 }
 
 func (worker *PartnersToursWorker) TourProcess(tour *tours.TourPartners) {
+	if IsSkipTour(tour) {
+		return
+	}
+
 	crc := tour.KeyDataCRC32()
 
 	id_tour_str, err := cache.Get(crc, fmt.Sprintf(PartnersTourIDKeyTemplate, tour.KeyData()))
@@ -102,9 +117,9 @@ func (worker *PartnersToursWorker) TourProcess(tour *tours.TourPartners) {
 			log.Error.Fatal("Error GenID for tour:", err)
 		}
 
-		mutex := worker.LockTourUpdate(id_tour)
-		mutex.Lock()
+		mutex := worker.TourUpdateLock(id_tour)
 		defer mutex.Unlock()
+
 		cache.Set(crc,
 			fmt.Sprintf(PartnersTourIDKeyTemplate, tour.KeyData()),
 			strconv.FormatUint(id_tour, 10))
@@ -126,9 +141,9 @@ func (worker *PartnersToursWorker) TourProcess(tour *tours.TourPartners) {
 			)
 		}
 
-		mutex := worker.LockTourUpdate(id_tour)
-		mutex.Lock()
+		mutex := worker.TourUpdateLock(id_tour)
 		defer mutex.Unlock()
+
 		// Compare old price with new price
 		old_price_data, err_price := cache.Get(id_tour, fmt.Sprintf(PartnersTourPriceDataKeyTemplate, id_tour))
 		if err_price != nil && err_price != redis.Nil {
@@ -161,11 +176,28 @@ func (worker *PartnersToursWorker) ToUpdateQueue(id uint64) error {
 }
 
 
-func (worker *PartnersToursWorker) LockTourUpdate(id uint64) *cache.RedisMutex {
-	mutex := cache.NewMutex(fmt.Sprintf(PartnersTourUpdateMutexTemplate, id))
-	if mutex == nil {
-		return nil
+func (worker *PartnersToursWorker) TourUpdateLock(id uint64) *cache.RedisMutex {
+	var locked bool
+	var mutex *cache.RedisMutex
+
+	start := true
+	counter := 5
+	locked = false
+
+	for start || (!locked && counter > 0) {
+		if !start && !locked {
+			log.Error.Println("Repeat for redis mutex (partners)...")
+		}
+		mutex = tours.PartnersTourUpdateLocker(id)
+		locked = mutex.Lock()
+
+		start = false
+		counter--
 	}
-	mutex.Lock()
+
+	if !locked {
+		log.Error.Fatalln("Can not lock redis mutex.")
+	}
+
 	return mutex
 }

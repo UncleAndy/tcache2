@@ -1,2 +1,4 @@
 login: "login"
 password: "password"
+threads: 8
+queue_max_size: 1000000
