@@ -1,5 +1,9 @@
 package worker_base
 
+import (
+	"github.com/uncleandy/tcache2/cache"
+)
+
 type WorkerBaseInterface interface {
 	Init()
 	Stop()
@@ -35,3 +39,16 @@ func WaitWorkersFinish() {
 	}
 }
 
+func CheckWaitIncomeToursFlag(name string) bool {
+	_, err := cache.Get(0, name)
+
+	return (err == nil)
+}
+
+func SetWaitIncomeToursFlag(name string) {
+	cache.Set(0, name, "1")
+}
+
+func CleanWaitIncomeToursFlag(name string) {
+	cache.Del(0, name)
+}

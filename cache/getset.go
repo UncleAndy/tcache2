@@ -149,3 +149,9 @@ func Incr(shard_index uint64, key string) (uint64, error) {
 	id, err := main_server.Connection.Incr(key).Result()
 	return uint64(id), err
 }
+
+func Decr(shard_index uint64, key string) (uint64, error) {
+	main_server := main_shard_server(shard_index)
+	id, err := main_server.Connection.Decr(key).Result()
+	return uint64(id), err
+}

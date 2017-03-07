@@ -66,20 +66,20 @@ func LoadPackets(t string) (chan SletatPacket) {
 	packets := make(chan SletatPacket)
 
 	go func() {
-		log.Info.Println("Download packets from", t)
+		// log.Info.Println("Download packets from", t)
 		packetsList, err := GetPacketsList(t)
 		if err != nil {
 			log.Error.Println(err)
 		}
 
-		log.Info.Println("fetchPackets list...")
+		// log.Info.Println("fetchPackets list...")
 		for _, packet := range packetsList {
 			if IsSkipPacket(&packet) {
-				log.Info.Println("fetchPackets packet skip...")
+				// log.Info.Println("fetchPackets packet skip...")
 				continue
 			}
 
-			log.Info.Println("fetchPackets packet to work")
+			// log.Info.Println("fetchPackets packet to work")
 			packets <- packet
 
 			if ForceStopFlag {
@@ -88,7 +88,7 @@ func LoadPackets(t string) (chan SletatPacket) {
 		}
 
 		close(packets)
-		log.Info.Println("fetchPackets done")
+		// log.Info.Println("fetchPackets done")
 	}()
 
 	return packets
@@ -97,7 +97,7 @@ func LoadPackets(t string) (chan SletatPacket) {
 func GetPacketsList(date string) ([]SletatPacket, error) {
 	var buf bytes.Buffer
 
-	log.Info.Println("FetchPacketsList...")
+	// log.Info.Println("FetchPacketsList...")
 
 	request.Body.SOAPAction = SletatPacketList{
 		CreateDatePoint: date,
@@ -116,15 +116,15 @@ func GetPacketsList(date string) ([]SletatPacket, error) {
 	req.Header.Add("Content-Type", "text/xml;charset=UTF-8")
 	req.Header.Add("SOAPAction", "urn:SletatRu:Contracts:Bulk:Soap11Gate:v1/Soap11Gate/GetPacketList")
 
-	log.Info.Println("FetchPacketsList request for packets data...")
+	// log.Info.Println("FetchPacketsList request for packets data...")
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	log.Info.Println("FetchPacketsList request for packets data done")
+	// log.Info.Println("FetchPacketsList request for packets data done")
 
-	log.Info.Println("FetchPacketsList packets data XML decode...")
+	/// log.Info.Println("FetchPacketsList packets data XML decode...")
 	envelope := struct {
 		XMLName xml.Name `xml:"Envelope"`
 		Body    struct {
@@ -138,11 +138,13 @@ func GetPacketsList(date string) ([]SletatPacket, error) {
 			}
 		}
 	}{}
-	log.Info.Println("FetchPacketsList packet data:\n", resp.Status)
+	if resp.Status != "200" {
+		log.Info.Println("FetchPacketsList packet HTTP status:\n", resp.Status)
+	}
 	if err = xml.NewDecoder(resp.Body).Decode(&envelope); err != nil {
 		return nil, err
 	}
-	log.Info.Println("FetchPacketsList packets data XML decode done")
+	// log.Info.Println("FetchPacketsList packets data XML decode done")
 
 	return envelope.Body.GetPacketListResponse.GetPacketListResult.PacketInfo, nil
 }

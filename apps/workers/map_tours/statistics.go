@@ -5,7 +5,12 @@ import (
 	"github.com/uncleandy/tcache2/cache"
 	"github.com/uncleandy/tcache2/log"
 	"fmt"
-	"strconv"
+	"github.com/uncleandy/tcache2/apps/workers/worker_base"
+)
+
+const (
+	MaxQueueSize = 300000
+	WaitIncomeToursFlagName = "wait_income_map_tours_flag"
 )
 
 var (
@@ -37,16 +42,30 @@ func (worker *MapToursWorker) StatisticsOutput() {
 
 	log.Info.Printf("STAT: Map tours workers current speed = %.0f t/s\n", speed)
 
-	sizes := ""
-	sep := ""
+	queue_size := int64(0)
+	zero_count := 0
 	for i := 0; i < worker.Settings.WorkerThreadsCount; i++ {
 		workerQueueToursName := fmt.Sprintf(ThreadMapToursQueueTemplate, i)
 
 		cache.QueueSizesUpdateAll(workerQueueToursName)
 		queue_length := cache.QueueSize(workerQueueToursName)
 
-		sizes = sizes + sep + strconv.FormatInt(queue_length, 10)
-		sep = ", "
+		queue_size += queue_length
+
+		if queue_length == 0 {
+			zero_count++
+		}
 	}
-	log.Info.Printf("STAT: Queue sizes for map tours thread: (%s)\n", sizes)
+	log.Info.Printf(
+		"STAT: Queue sizes for map tours thread: %d (z:%d/%d)\n",
+		queue_size,
+		zero_count,
+		worker.Settings.WorkerThreadsCount,
+	)
+
+	if queue_size > MaxQueueSize {
+		worker_base.SetWaitIncomeToursFlag(WaitIncomeToursFlagName)
+	} else {
+		worker_base.CleanWaitIncomeToursFlag(WaitIncomeToursFlagName)
+	}
 }

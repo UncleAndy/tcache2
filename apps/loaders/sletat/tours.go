@@ -10,10 +10,20 @@ import (
 	"github.com/uncleandy/tcache2/cache"
 	"sort"
 	"time"
+	"github.com/uncleandy/tcache2/apps/workers/worker_base"
+	"github.com/uncleandy/tcache2/apps/workers/map_tours"
+	"github.com/uncleandy/tcache2/apps/workers/partners_tours"
 )
 
 const (
 	LoaderQueueToursName = "tours_download_list"
+)
+
+var (
+	WaitIncomeToursFlagsNames = []string{
+		map_tours.WaitIncomeToursFlagName,
+		partners_tours.WaitIncomeToursFlagName,
+	}
 )
 
 func LoadTours(packets chan SletatPacket, finish_channel chan bool) {
@@ -24,7 +34,7 @@ func LoadTours(packets chan SletatPacket, finish_channel chan bool) {
 	for i := 0; i < sletatSettings.Threads; i++ {
 		go func() {
 			for packet := range packets {
-				log.Info.Println("fetchTours Run ...")
+				// log.Info.Println("fetchTours Run ...")
 				tours, err := FetchTours(packet.Id)
 
 				if err != nil {
@@ -33,7 +43,7 @@ func LoadTours(packets chan SletatPacket, finish_channel chan bool) {
 				}
 
 				// Process tours before send the to the database.
-				log.Info.Println("fetchTours tours loop Run ...")
+				// log.Info.Println("fetchTours tours loop Run ...")
 				for tour := range tours {
 					PreProcessTour(packet, &tour)
 
@@ -43,17 +53,17 @@ func LoadTours(packets chan SletatPacket, finish_channel chan bool) {
 
 					TourToQueue(&tour)
 				}
-				log.Info.Println("fetchTours tours loop FINISH ...")
+				// log.Info.Println("fetchTours tours loop FINISH ...")
 			}
 
-			log.Info.Println("fetchTours gorotine FINISH")
+			//log.Info.Println("fetchTours gorotine FINISH")
 			wg.Done()
 		}()
 	}
 
 	go func() {
 		wg.Wait()
-		log.Info.Println("fetchTours FINISH ...")
+		//log.Info.Println("fetchTours FINISH ...")
 
 		finish_channel <- true
 	}()
@@ -62,7 +72,7 @@ func LoadTours(packets chan SletatPacket, finish_channel chan bool) {
 
 func FetchTours(packetId string) (chan tours.TourBase, error) {
 	url := bulkCacheUrl + packetId
-	log.Info.Println("Download:", url)
+	// log.Info.Println("Download:", url)
 
 	resp, err := client.Get(url)
 	if err != nil {
@@ -85,10 +95,10 @@ func FetchTours(packetId string) (chan tours.TourBase, error) {
 				cache.QueueSizesUpdateAll(LoaderQueueToursName)
 				queue_length := cache.QueueSize(LoaderQueueToursName)
 
-				if queue_length < sletatSettings.QueueMaxSize {
+				if queue_length < sletatSettings.QueueMaxSize && !CheckWaitIncomeToursFlags() {
 					break
 				} else {
-					log.Info.Printf("Loader queue oversized (%d). Wait 5 second...\n", queue_length)
+					log.Info.Printf("Loader queue oversize of overspeed (%d). Wait 5 second...\n", queue_length)
 					WaitCounter++
 					time.Sleep(5 * time.Second)
 					log.Info.Println("Continue check loader queue size.")
@@ -116,7 +126,7 @@ func FetchTours(packetId string) (chan tours.TourBase, error) {
 			}
 		}
 
-		log.Info.Println("FetchTours FINISH")
+		// log.Info.Println("FetchTours FINISH")
 		close(tours_channel)
 	}()
 
@@ -206,4 +216,13 @@ func processKidsValue(tour *tours.TourBase) {
 	tour.Kid1Age = &kidsSlice[0]
 	tour.Kid2Age = &kidsSlice[1]
 	tour.Kid3Age = &kidsSlice[2]
+}
+
+func CheckWaitIncomeToursFlags() bool {
+	for _, name := range WaitIncomeToursFlagsNames {
+		if worker_base.CheckWaitIncomeToursFlag(name) {
+			return true
+		}
+	}
+	return false
 }
