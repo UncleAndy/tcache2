@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	MaxQueueSize = 300000
+	MaxQueueSize = 100000
 	WaitIncomeToursFlagName = "wait_income_partners_tours_flag"
 )
 

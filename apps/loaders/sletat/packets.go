@@ -138,9 +138,7 @@ func GetPacketsList(date string) ([]SletatPacket, error) {
 			}
 		}
 	}{}
-	if resp.Status != "200" {
-		log.Info.Println("FetchPacketsList packet HTTP status:\n", resp.Status)
-	}
+	log.Info.Println("FetchPacketsList packet HTTP status:\n", resp.Status)
 	if err = xml.NewDecoder(resp.Body).Decode(&envelope); err != nil {
 		return nil, err
 	}
