@@ -4,6 +4,8 @@ import (
 	"testing"
 	"github.com/uncleandy/tcache2/cache"
 	"gopkg.in/redis.v4"
+	"fmt"
+	"sync"
 )
 
 func TestSingleQueueSizesUpdateAllEmpty(t *testing.T) {
@@ -176,7 +178,6 @@ func TestSingleGetQueueFromMain(t *testing.T) {
 	cache.CleanQueue("test_queue1")
 }
 
-
 func TestSingleGetQueueBatchFromMain(t *testing.T) {
 	init_test_redis_single()
 
@@ -293,6 +294,62 @@ func TestSingleGetQueueBatchFromMain(t *testing.T) {
 		)
 	}
 
+
+	cache.CleanQueue("test_queue1")
+}
+
+func TestSingleGetQueueBatchMultiGoroutines(t *testing.T) {
+	init_test_redis_single()
+
+	for i := 0; i< 10000; i++ {
+		val := fmt.Sprintf("Value_%d", i)
+		cache.RedisSettings.MainServers[0].Connection.RPush("test_queue1", val)
+	}
+
+	goroutines := 10
+	batch := int64(1000)
+	sizes := make([]int, goroutines)
+	lists := make([][]string, goroutines)
+
+	wg := sync.WaitGroup{}
+	wg.Add(goroutines)
+	for g := 0; g < goroutines; g++ {
+		index := g
+		go func() {
+			list, err := cache.GetQueueBatch("test_queue1", batch)
+			if err != nil {
+				t.Error("Error when read batch from queue: ", err)
+			}
+
+			sizes[index] += len(list)
+			lists[index] = list
+
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+
+	for i := 0; i < len(sizes); i++ {
+		if int64(sizes[i]) != batch {
+			t.Error("Wrong size when read batch from queue (expected", batch, "): sizes[", i, "] = ", sizes[i])
+		}
+	}
+
+	// Check duplicate values in returned list
+	check_vals := make(map[string]int)
+	for i := 0; i < len(lists); i++ {
+		list := lists[i]
+		for j := 0; j < len(list); j++ {
+			check_vals[list[j]] += 1
+		}
+	}
+
+	for val := range check_vals {
+		count := check_vals[val]
+		if count > 1 {
+			t.Error("Detect duplicate value when read batch from queue: value: ", val, "; count: ", count)
+		}
+	}
 
 	cache.CleanQueue("test_queue1")
 }

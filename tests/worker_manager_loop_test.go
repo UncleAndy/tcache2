@@ -1,18 +1,19 @@
 package tests
 
+
 import (
-	"testing"
-	"github.com/uncleandy/tcache2/cache"
-	"github.com/uncleandy/tcache2/apps/loaders/sletat"
+	//"testing"
+	//"github.com/uncleandy/tcache2/cache"
+	//"github.com/uncleandy/tcache2/apps/loaders/sletat"
 	"github.com/uncleandy/tcache2/apps/workers/worker_base"
 	"github.com/uncleandy/tcache2/apps/workers/map_tours"
 	"github.com/uncleandy/tcache2/apps/workers/partners_tours"
-	"time"
+	//"time"
 	"fmt"
 	"github.com/uncleandy/tcache2/tours"
 	"math/rand"
-	"github.com/bouk/monkey"
-	"reflect"
+	//"github.com/bouk/monkey"
+	//"reflect"
 )
 
 func init_workers() {
@@ -87,6 +88,7 @@ func random_tour_base() *tours.TourBase {
 var sequence_map_crc32 uint64
 var sequence_partners_crc32 uint64
 
+/*
 func TestWorkerManagerLoop(t *testing.T) {
 	init_test_redis_single()
 	init_workers()
@@ -178,3 +180,4 @@ func TestWorkerManagerLoop(t *testing.T) {
 	cache.CleanQueue(partners_tours_queue_1)
 	cache.CleanQueue(partners_tours_queue_2)
 }
+*/
