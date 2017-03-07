@@ -10,6 +10,7 @@ import (
 	"github.com/uncleandy/tcache2/tours"
 	"strconv"
 	"gopkg.in/redis.v4"
+	"github.com/bouk/monkey"
 )
 
 func random_tour_map() *tours.TourMap {
@@ -35,6 +36,10 @@ func TestMapToursThreadProcessSimple(t *testing.T) {
 	tour3.HotelId += 2
 	tour3.Price += 2
 
+	monkey.Patch(map_tours.IsSkipTour, func(_ *tours.TourMap) bool {
+		return false
+	})
+
 	thread_index := 0
 	thread_queue := fmt.Sprintf(map_tours.ThreadMapToursQueueTemplate, thread_index)
 
@@ -43,9 +48,10 @@ func TestMapToursThreadProcessSimple(t *testing.T) {
 	cache.AddQueue(thread_queue, tour3.ToString())
 
 	map_tours.ForceStopThreads = false
-	worker_base.Workers[0].MainLoop()
+	go worker_base.Workers[0].MainLoop()
 
 	for !cache.IsEmptyQueue(thread_queue) {
+		println("Queue ", thread_queue, " not empty. Wait...")
 		time.Sleep(TestWaitTime)
 	}
 	map_tours.ForceStopThreads = true
@@ -204,8 +210,12 @@ func TestMapToursThreadProcessPriceUpdate(t *testing.T) {
 	cache.AddQueue(thread_queue, tour1.ToString())
 	cache.AddQueue(thread_queue, tour2.ToString())
 
+	monkey.Patch(map_tours.IsSkipTour, func(_ *tours.TourMap) bool {
+		return false
+	})
+
 	map_tours.ForceStopThreads = false
-	worker_base.Workers[0].MainLoop()
+	go worker_base.Workers[0].MainLoop()
 
 	for !cache.IsEmptyQueue(thread_queue) {
 		time.Sleep(TestWaitTime)
@@ -295,8 +305,12 @@ func TestMapToursThreadProcessPriceLogUpdate(t *testing.T) {
 	cache.AddQueue(thread_queue, tour2.ToString())
 	cache.AddQueue(thread_queue, tour3.ToString())
 
+	monkey.Patch(map_tours.IsSkipTour, func(_ *tours.TourMap) bool {
+		return false
+	})
+
 	map_tours.ForceStopThreads = false
-	worker_base.Workers[0].MainLoop()
+	go worker_base.Workers[0].MainLoop()
 
 	for !cache.IsEmptyQueue(thread_queue) {
 		time.Sleep(TestWaitTime)

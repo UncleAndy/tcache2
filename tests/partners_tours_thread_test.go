@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"github.com/uncleandy/tcache2/apps/workers/partners_tours"
 	"gopkg.in/redis.v4"
+	"github.com/bouk/monkey"
 )
 
 func random_tour_partners() *tours.TourPartners {
@@ -39,10 +40,15 @@ func TestPartnersToursThreadProcessSimple(t *testing.T) {
 	cache.AddQueue(thread_queue, tour2.ToString())
 	cache.AddQueue(thread_queue, tour3.ToString())
 
+	monkey.Patch(partners_tours.IsSkipTour, func(_ *tours.TourPartners) bool {
+		return false
+	})
+
 	partners_tours.ForceStopThreads = false
-	worker_base.Workers[1].MainLoop()
+	go worker_base.Workers[1].MainLoop()
 
 	for !cache.IsEmptyQueue(thread_queue) {
+		println("Queue not empty. Wait...")
 		time.Sleep(TestWaitTime)
 	}
 	partners_tours.ForceStopThreads = true
@@ -200,10 +206,15 @@ func TestPartnersToursThreadProcessPriceUpdate(t *testing.T) {
 	cache.AddQueue(thread_queue, tour1.ToString())
 	cache.AddQueue(thread_queue, tour2.ToString())
 
+	monkey.Patch(partners_tours.IsSkipTour, func(_ *tours.TourPartners) bool {
+		return false
+	})
+
 	partners_tours.ForceStopThreads = false
-	worker_base.Workers[0].MainLoop()
+	go worker_base.Workers[1].MainLoop()
 
 	for !cache.IsEmptyQueue(thread_queue) {
+		println("Queue not empty. Wait...")
 		time.Sleep(TestWaitTime)
 	}
 	partners_tours.ForceStopThreads = true
