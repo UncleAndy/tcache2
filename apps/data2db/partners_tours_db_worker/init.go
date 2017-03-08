@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"gopkg.in/yaml.v2"
 	"github.com/uncleandy/tcache2/log"
+	"github.com/uncleandy/tcache2/db"
 )
 
 const (
@@ -27,6 +28,15 @@ type PartnersTourDbSQLAction struct {
 func (worker *PartnersToursDbWorker) Init() {
 	worker.LoadWorkerConfig()
 	worker.FinishChanel = make(chan bool)
+
+	worker.DbSQLAction = PartnersTourDbSQLAction{}
+	worker.RedisTourReader = PartnersTourRedisReader{}
+
+	worker.DbPool = make([]db.DbConnection, worker.Settings.WorkerThreadsCount)
+	for i := 0; i < worker.Settings.WorkerThreadsCount; i++ {
+		worker.DbPool[i].Init(db.CurrentDbSettings)
+		worker.DbPool[i].CheckConnect()
+	}
 }
 
 func (worker *PartnersToursDbWorker) WaitFinish() {

@@ -45,6 +45,7 @@ func (worker *PartnersToursDbWorker) InsertProcess(thread_index int) {
 		PartnersToursInsertBatchSize,
 		PartnersTourInsertThreadQueueTemplate,
 		PartnersTourInsertThreadDataCounter,
+		worker.DbConnectionByThread(thread_index),
 	)
 }
 
@@ -54,6 +55,7 @@ func (worker *PartnersToursDbWorker) UpdateProcess(thread_index int) {
 		PartnersToursUpdateBatchSize,
 		PartnersTourUpdateThreadQueueTemplate,
 		PartnersTourUpdateThreadDataCounter,
+		worker.DbConnectionByThread(thread_index),
 	)
 }
 
@@ -63,6 +65,7 @@ func (worker *PartnersToursDbWorker) DeleteProcess(thread_index int) {
 		PartnersToursDeleteBatchSize,
 		PartnersTourDeleteThreadQueueTemplate,
 		PartnersTourDeleteThreadDataCounter,
+		worker.DbConnectionByThread(thread_index),
 	)
 }
 
@@ -104,7 +107,7 @@ func (i PartnersTourRedisReader) ReadTour(id_str string) (tours.TourInterface, e
 	return tours.TourInterface(&tour), nil
 }
 
-func (i PartnersTourDbSQLAction) InsertToursFlush(tours *[]tours.TourInterface, size int) {
+func (i PartnersTourDbSQLAction) InsertToursFlush(tours *[]tours.TourInterface, size int, db_conn *db.DbConnection) {
 	// Insert tours to DB
 	first_tour := (*tours)[0]
 	insert_fields_sql := first_tour.InsertSQLFieldsSet()
@@ -117,15 +120,15 @@ func (i PartnersTourDbSQLAction) InsertToursFlush(tours *[]tours.TourInterface, 
 	}
 	sql := "INSERT INTO partners_tours ("+insert_fields_sql+") VALUES "+data_sql+";"
 
-	db.CheckConnect()
-	_, err := db.SendQuery(sql)
+	db_conn.CheckConnect()
+	_, err := db_conn.SendQuery(sql)
 	if err != nil {
 		log.Error.Print("WARNING! Error when insert new partners tours to DB: ", err)
 	}
 }
 
-func (i PartnersTourDbSQLAction) UpdateToursFlush(tours *[]tours.TourInterface, size int) {
-	trx, err := db.StartTransaction()
+func (i PartnersTourDbSQLAction) UpdateToursFlush(tours *[]tours.TourInterface, size int, db_conn *db.DbConnection) {
+	err := db_conn.StartTransaction()
 	if err != nil {
 		log.Error.Print("WARNING! Error update partners tours start transaction: ", err)
 	}
@@ -134,24 +137,24 @@ func (i PartnersTourDbSQLAction) UpdateToursFlush(tours *[]tours.TourInterface, 
 		tour := (*tours)[i]
 		id_str := strconv.FormatUint(tour.GetId(), 10)
 		sql := "UPDATE partners_tours SET "+tour.UpdateSQLString()+" WHERE id = "+id_str
-		err := db.SendQueryParamsTrx(trx, sql)
+		err := db_conn.SendQueryParamsTrx(sql)
 		if err != nil {
 			log.Error.Print("WARNING! Error when update partners tour "+ id_str +" to DB: ", err)
 		}
 	}
 
-	err = db.CommitTransaction(trx)
+	err = db_conn.CommitTransaction()
 	if err != nil {
 		log.Error.Print("WARNING! Error update partners tours commit transaction: ", err)
 	}
 }
 
-func (i PartnersTourDbSQLAction) DeleteToursFlush(tours *[]string, size int) {
+func (i PartnersTourDbSQLAction) DeleteToursFlush(tours *[]string, size int, db_conn *db.DbConnection) {
 	actual := (*tours)[0:size]
 	ids := strings.Join(actual, ",")
 	sql := "DELETE FROM partners_tours WHERE id IN (" + ids + ")"
-	db.CheckConnect()
-	_, err := db.SendQuery(sql)
+	db_conn.CheckConnect()
+	_, err := db_conn.SendQuery(sql)
 	if err != nil {
 		log.Error.Print("WARNING! Error delete partners tours from DB: ", err)
 	}

@@ -6,11 +6,11 @@ import (
 	"io/ioutil"
 	"github.com/uncleandy/tcache2/log"
 	"database/sql"
-	"time"
 	"fmt"
 	_ "github.com/lib/pq"
 	"strings"
 	"regexp"
+	"errors"
 )
 
 type DbSettings struct {
@@ -21,12 +21,18 @@ type DbSettings struct {
 	Password string	`yaml:"password"`
 }
 
+type DbConnection struct {
+	Settings *DbSettings
+	Db *sql.DB
+	Transaction *sql.Tx
+}
+
 const (
 	EnvDbFileConfig = "DB_CONFIG"
 )
 
 var (
-	CurrentDbSettings DbSettings
+	CurrentDbSettings *DbSettings
 	db *sql.DB
 )
 
@@ -51,14 +57,22 @@ func Init() {
 	}
 }
 
+func (conn *DbConnection) Init(db_settings *DbSettings) {
+	conn.Settings = db_settings
+}
+
 func Connect() *sql.DB {
+	return ConnectBy(CurrentDbSettings)
+}
+
+func ConnectBy(settings *DbSettings) *sql.DB {
 	dbConnection := fmt.Sprintf(
 		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
-		CurrentDbSettings.User,
-		CurrentDbSettings.Password,
-		CurrentDbSettings.Host,
-		CurrentDbSettings.Port,
-		CurrentDbSettings.DBName,
+		settings.User,
+		settings.Password,
+		settings.Host,
+		settings.Port,
+		settings.DBName,
 	)
 
 	db, err := sql.Open("postgres", dbConnection)
@@ -67,11 +81,15 @@ func Connect() *sql.DB {
 	}
 
 	// Config connections.
-	db.SetConnMaxLifetime(5 * time.Minute)
+	db.SetConnMaxLifetime(0)
 	//db.SetMaxIdleConns(20)
 	db.SetMaxOpenConns(50)
 
 	return db
+}
+
+func (conn *DbConnection) Connect() {
+	conn.Db = ConnectBy(conn.Settings)
 }
 
 func Close() {
@@ -85,10 +103,39 @@ func Close() {
 	}
 }
 
+
+func (conn *DbConnection) Close() {
+	if conn.Db == nil {
+		return
+	}
+
+	err := conn.Db.Close()
+	if err != nil {
+		log.Error.Fatal(err)
+	}
+}
+
 func StartTransaction() (*sql.Tx, error) {
 	CheckConnect()
 
 	return db.Begin()
+}
+
+func (conn *DbConnection) StartTransaction() error {
+	if conn.Transaction != nil {
+		return errors.New("START TRANSACTION: Transaction already started.")
+	}
+
+	conn.CheckConnect()
+
+	trx, err := conn.Db.Begin()
+	if err == nil {
+		conn.Transaction = trx
+	} else {
+		conn.Transaction = nil
+	}
+
+	return err
 }
 
 func CommitTransaction(txn *sql.Tx) error {
@@ -99,16 +146,40 @@ func CommitTransaction(txn *sql.Tx) error {
 	return nil
 }
 
+func (conn *DbConnection) CommitTransaction() error {
+	if conn.Transaction == nil {
+		return errors.New("COMMIT TRANSACTION: Transaction not started.")
+	}
+
+	err := conn.Transaction.Commit()
+	if err != nil {
+		return err
+	}
+
+	conn.Transaction = nil
+	return nil
+}
+
 func CheckConnect() {
-	if db == nil {
-		db = Connect()
+	db = CheckConnectBy(db, CurrentDbSettings)
+}
+
+func CheckConnectBy(checked_db *sql.DB, db_settings *DbSettings) *sql.DB {
+	if checked_db == nil {
+		return ConnectBy(db_settings)
 	} else {
-		err := db.Ping()
+		err := checked_db.Ping()
 
 		if err != nil {
-			db = Connect()
+			return ConnectBy(db_settings)
 		}
 	}
+
+	return checked_db
+}
+
+func (conn *DbConnection) CheckConnect() {
+	conn.Db = CheckConnectBy(conn.Db, conn.Settings)
 }
 
 func IsInListInt(list []int, id int) bool {
@@ -123,6 +194,10 @@ func IsInListInt(list []int, id int) bool {
 
 func SendQuery(query string, params ...interface{}) (*sql.Rows, error) {
 	return db.Query(query, params...)
+}
+
+func (conn *DbConnection) SendQuery(query string, params ...interface{}) (*sql.Rows, error) {
+	return conn.Db.Query(query, params...)
 }
 
 func SendQueryParamsTrx(txn *sql.Tx, query string, params ...interface{}) error {
@@ -141,6 +216,14 @@ func SendQueryParamsTrx(txn *sql.Tx, query string, params ...interface{}) error 
 	}
 
 	return nil
+}
+
+func (conn *DbConnection) SendQueryParamsTrx(query string, params ...interface{}) error {
+	if conn.Transaction == nil {
+		return errors.New("SEND QUERY: Transaction not started.")
+	}
+
+	return SendQueryParamsTrx(conn.Transaction, query, params...)
 }
 
 func EscapedBy(source string, symbol string, code string) string {

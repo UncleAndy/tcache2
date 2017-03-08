@@ -22,6 +22,7 @@ func InitDbWorkers() {
 func main() {
 	db.Init()
 	cache.InitFromEnv()
+	cache.RedisInit()
 
 	InitDbWorkers()
 	RunDbWorkers()

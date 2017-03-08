@@ -35,6 +35,7 @@ type ManagerBase struct {
 }
 
 func (worker *ManagerBase) ManagerLoop() {
+	log.Info.Println("Start manager main loop...")
 	cache.Del(0, worker.TourInsertThreadDataCounter)
 	cache.Del(0, worker.TourUpdateThreadDataCounter)
 	cache.Del(0, worker.TourDeleteThreadDataCounter)
@@ -43,37 +44,53 @@ func (worker *ManagerBase) ManagerLoop() {
 	update_queue_length := cache.QueueSize(worker.TourUpdateQueue)
 	delete_queue_length := cache.QueueSize(worker.TourDeleteQueue)
 
-	for i := int64(0); i < insert_queue_length; i++ {
-		id_str, err := cache.GetQueue(worker.TourInsertQueue)
-		if err != nil {
-			log.Error.Print("Error get tour ID from insert queue:", err)
-			continue
+	if insert_queue_length > 0 {
+		log.Info.Println("Start manager INSERT loop...")
+		for i := int64(0); i < insert_queue_length; i++ {
+			id_str, err := cache.GetQueue(worker.TourInsertQueue)
+			if err != nil {
+				log.Error.Print("Error get tour ID from insert queue:", err)
+				continue
+			}
+			worker.SendTourInsert(id_str)
 		}
-		worker.SendTourInsert(id_str)
+		worker.ThreadsInsertDataFinished()
+		log.Info.Println("Finish manager INSERT loop.")
 	}
-	worker.ThreadsInsertDataFinished()
 
-	for i := int64(0); i < update_queue_length; i++ {
-		id_str, err := cache.GetQueue(worker.TourUpdateQueue)
-		if err != nil {
-			log.Error.Print("Error get tour ID from update queue:", err)
-			continue
+	if update_queue_length > 0 {
+		log.Info.Println("Start manager UPDATE loop...")
+		for i := int64(0); i < update_queue_length; i++ {
+			id_str, err := cache.GetQueue(worker.TourUpdateQueue)
+			if err != nil {
+				log.Error.Print("Error get tour ID from update queue:", err)
+				continue
+			}
+			worker.SendTourUpdate(id_str)
 		}
-		worker.SendTourUpdate(id_str)
+		worker.ThreadsUpdateDataFinished()
+		log.Info.Println("Finish manager UPDATE loop.")
 	}
-	worker.ThreadsUpdateDataFinished()
 
-	for i := int64(0); i < delete_queue_length; i++ {
-		id_str, err := cache.GetQueue(worker.TourDeleteQueue)
-		if err != nil {
-			log.Error.Print("Error get tour ID from delete queue:", err)
-			continue
+	if delete_queue_length > 0 {
+		log.Info.Println("Start manager DELETE loop...")
+		for i := int64(0); i < delete_queue_length; i++ {
+			id_str, err := cache.GetQueue(worker.TourDeleteQueue)
+			if err != nil {
+				log.Error.Print("Error get tour ID from delete queue:", err)
+				continue
+			}
+			worker.SendTourDelete(id_str)
 		}
-		worker.SendTourDelete(id_str)
+		worker.ThreadsDeleteDataFinished()
+		log.Info.Println("Finish manager DELETE loop.")
 	}
-	worker.ThreadsDeleteDataFinished()
 
-	worker.WaitThreadsFlushData()
+	if insert_queue_length > 0 || update_queue_length > 0 || delete_queue_length > 0 {
+		log.Info.Println("Wait finish db workers processes...")
+		worker.WaitThreadsFlushData()
+		log.Info.Println("DB workers processes finished.")
+	}
 	worker.FinishChanel <- true
 }
 

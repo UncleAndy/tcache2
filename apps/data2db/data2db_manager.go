@@ -6,6 +6,7 @@ import (
 	"github.com/uncleandy/tcache2/apps/data2db/db_manager_base"
 	"github.com/uncleandy/tcache2/apps/data2db/map_tours_db_manager"
 	"github.com/uncleandy/tcache2/apps/data2db/partners_tours_db_manager"
+	"github.com/uncleandy/tcache2/log"
 )
 
 var (
@@ -20,12 +21,15 @@ func InitWorkers() {
 }
 
 func main() {
+	log.Info.Println("DB manager start...")
 	db.Init()
 	cache.InitFromEnv()
+	cache.RedisInit()
 
 	InitWorkers()
 	RunWorkers()
 	WaitWorkersFinish()
+	log.Info.Println("DB manager finished.")
 }
 
 func RunWorkers() {
