@@ -171,6 +171,7 @@ func CheckConnectBy(checked_db *sql.DB, db_settings *DbSettings) *sql.DB {
 		err := checked_db.Ping()
 
 		if err != nil {
+			log.Error.Println("DB ping error: ", err)
 			return ConnectBy(db_settings)
 		}
 	}

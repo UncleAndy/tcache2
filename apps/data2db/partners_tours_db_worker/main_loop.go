@@ -24,18 +24,17 @@ func (worker *PartnersToursDbWorker) MainLoop() {
 
 func (worker *PartnersToursDbWorker) InitThreads() {
 	for i := 0; i < worker.Settings.WorkerThreadsCount; i++ {
-		worker.Thread(worker.Settings.WorkerFirstThreadId + i)
+		thread := worker.Settings.WorkerFirstThreadId + i
+		go worker.Thread(thread)
 	}
 }
 
 func (worker *PartnersToursDbWorker) Thread(thread_index int) {
-	go func() {
-		for {
-			worker.InsertProcess(thread_index)
-			worker.UpdateProcess(thread_index)
-			worker.DeleteProcess(thread_index)
-		}
-	}()
+	for {
+		worker.InsertProcess(thread_index)
+		worker.UpdateProcess(thread_index)
+		worker.DeleteProcess(thread_index)
+	}
 }
 
 // TODO: Tests process like map tours

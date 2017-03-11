@@ -26,19 +26,18 @@ func (worker *MapToursDbWorker) MainLoop() {
 
 func (worker *MapToursDbWorker) InitThreads() {
 	for i := 0; i < worker.Settings.WorkerThreadsCount; i++ {
-		worker.Thread(worker.Settings.WorkerFirstThreadId + i)
+		thread := worker.Settings.WorkerFirstThreadId + i
+		go worker.Thread(thread)
 	}
 }
 
 func (worker *MapToursDbWorker) Thread(thread_index int) {
 	log.Info.Println("Run map thread ", thread_index)
-	go func() {
-		for {
-			worker.InsertProcess(thread_index)
-			worker.UpdateProcess(thread_index)
-			worker.DeleteProcess(thread_index)
-		}
-	}()
+	for {
+		worker.InsertProcess(thread_index)
+		worker.UpdateProcess(thread_index)
+		worker.DeleteProcess(thread_index)
+	}
 }
 
 func (worker *MapToursDbWorker) InsertProcess(thread_index int) {
@@ -111,7 +110,6 @@ func (i MapTourRedisReader) ReadTour(id_str string) (tours.TourInterface, error)
 
 func (i MapTourDbSQLAction) InsertToursFlush(tours *[]tours.TourInterface, size int, db_conn *db.DbConnection) {
 	// Insert tours to DB
-	log.Info.Println("InsertToursFlush: Map start...")
 	first_tour := (*tours)[0]
 	insert_fields_sql := first_tour.InsertSQLFieldsSet()
 	sep := ""
@@ -123,21 +121,17 @@ func (i MapTourDbSQLAction) InsertToursFlush(tours *[]tours.TourInterface, size 
 	}
 	sql := "INSERT INTO cached_sletat_tours ("+insert_fields_sql+") VALUES "+data_sql+";"
 
-	log.Info.Println("InsertToursFlush: Check connect...")
 	db_conn.CheckConnect()
-	log.Info.Println("InsertToursFlush: Run query...")
 	_, err := db_conn.SendQuery(sql)
-	log.Info.Println("InsertToursFlush: Query done.")
 	if err != nil {
 		log.Error.Print("WARNING! Error when insert new map tours to DB: ", err)
 	}
-	log.Info.Println("InsertToursFlush: Map finish...")
 }
 
 func (i MapTourDbSQLAction) UpdateToursFlush(tours *[]tours.TourInterface, size int, db_conn *db.DbConnection) {
 	err := db_conn.StartTransaction()
 	if err != nil {
-		log.Error.Print("WARNING! Error update map tours start transaction: ", err)
+		log.Error.Println("WARNING! Error update map tours start transaction: ", err)
 	}
 
 	for i := 0; i < size; i++ {
@@ -146,13 +140,13 @@ func (i MapTourDbSQLAction) UpdateToursFlush(tours *[]tours.TourInterface, size 
 		sql := "UPDATE cached_sletat_tours SET "+tour.UpdateSQLString()+" WHERE id = "+id_str
 		err := db_conn.SendQueryParamsTrx(sql)
 		if err != nil {
-			log.Error.Print("WARNING! Error when update map tour ", id_str, " to DB: ", err)
+			log.Error.Println("WARNING! Error when update map tour ", id_str, " to DB: ", err)
 		}
 	}
 
 	err = db_conn.CommitTransaction()
 	if err != nil {
-		log.Error.Print("WARNING! Error update map tours commit transaction: ", err)
+		log.Error.Println("WARNING! Error update map tours commit transaction: ", err)
 	}
 }
 
