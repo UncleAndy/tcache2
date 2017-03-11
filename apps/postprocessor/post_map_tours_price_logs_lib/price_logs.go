@@ -11,8 +11,16 @@ import (
 	"strconv"
 )
 
+var (
+	WorkerKeysProcessed = 0
+	WorkerPricesUpdated = 0
+	WorkerKeysDeleted = 0
+	WorkerKeysBad = 0
+	WorkerKeysSkip = 0
+)
+
 const (
-	PriceDataExpiredDuration = 4 * time.Hour
+	PriceDataExpiredDuration = 1 * time.Hour
 )
 
 func (post_worker *PostMapToursWorker) ProcessPriceLogs(tour_id uint64) {
@@ -34,18 +42,28 @@ func (post_worker *PostMapToursWorker) ProcessPriceLogs(tour_id uint64) {
 		} else {
 			log.Error.Print("Error when read price data for tour ", tour_id, ":", err)
 		}
+
+		WorkerKeysCountMutex.Lock()
+		WorkerKeysBad++
+		WorkerKeysCountMutex.Unlock()
 	}
 
 	tour := tours.TourMap{}
 	tour.FromPriceData(price_data)
 
 	if !post_worker.PriceDataExpired(&tour) {
+		WorkerKeysCountMutex.Lock()
+		WorkerKeysSkip++
+		WorkerKeysCountMutex.Unlock()
 		return
 	}
 
 	expire_time := post_worker.CurrentExpireTime().Format("2006-01-02 15:04:05")
 	price_time, err := time.Parse("2006-01-02 15:04:05", tour.UpdateDate)
 	if err != nil {
+		WorkerKeysCountMutex.Lock()
+		WorkerKeysBad++
+		WorkerKeysCountMutex.Unlock()
 		log.Error.Print("Wrong tour.UpdateTime string for tour: ", tour.UpdateDate, "\n", err)
 	} else {
 		if post_worker.CurrentExpireTime().Unix() < price_time.Unix() {
@@ -57,6 +75,10 @@ func (post_worker *PostMapToursWorker) ProcessPriceLogs(tour_id uint64) {
 	actual_logs := PriceLogAfterTime(price_log, expire_time)
 
 	if len(actual_logs) <= 0 {
+		WorkerKeysCountMutex.Lock()
+		WorkerKeysDeleted++
+		WorkerKeysCountMutex.Unlock()
+
 		post_worker.DeleteMapTour(tour_id, "", price_data_key, price_log_key)
 		return
 	}
@@ -80,6 +102,10 @@ func (post_worker *PostMapToursWorker) ProcessPriceLogs(tour_id uint64) {
 	}
 
 	if min_price_data != "" {
+		WorkerKeysCountMutex.Lock()
+		WorkerPricesUpdated++
+		WorkerKeysCountMutex.Unlock()
+
 		// Save new price data
 		cache.Set(tour_id, price_data_key, min_price_data)
 
@@ -93,7 +119,10 @@ func (post_worker *PostMapToursWorker) ProcessPriceLogs(tour_id uint64) {
 		// Add id to update queue
 		cache.AddQueue(map_tours.MapTourUpdateQueue, strconv.FormatUint(tour_id, 10))
 	} else {
-		println("2")
+		WorkerKeysCountMutex.Lock()
+		WorkerKeysDeleted++
+		WorkerKeysCountMutex.Unlock()
+
 		post_worker.DeleteMapTour(tour_id, "", price_data_key, price_log_key)
 	}
 }

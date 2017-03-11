@@ -48,7 +48,6 @@ func (worker *DbWorkerBase) InsertProcessBy(thread_index int, batch_size int, qu
 
 		// Check finish loop
 		if err == redis.Nil {
-			log.Info.Println("INSERT: Check for finish...")
 			_, err := cache.Get(0, thread_flag_key)
 			if err != redis.Nil {
 				log.Info.Println("INSERT: Need finish. Flash data check...")
@@ -65,7 +64,6 @@ func (worker *DbWorkerBase) InsertProcessBy(thread_index int, batch_size int, qu
 				break
 			} else {
 				runtime.Gosched()
-				log.Info.Println("INSERT: No data - continue")
 				continue
 			}
 		} else if err != nil {
@@ -73,19 +71,15 @@ func (worker *DbWorkerBase) InsertProcessBy(thread_index int, batch_size int, qu
 			continue
 		}
 
-		log.Info.Println("INSERT: Read tour from redis...")
 		tour, err := worker.RedisTourReader.ReadTour(id_str)
 		if err != nil {
 			runtime.Gosched()
-			log.Info.Println("INSERT: Tour data empty - continue")
 			continue
 		}
 
 		insert_tours[insert_tours_index] = tour
 		insert_tours_index++
-		log.Info.Println("INSERT: Tours processed:", insert_tours_index)
 		if insert_tours_index >= batch_size {
-			log.Info.Println("INSERT: Save tours to DB:", insert_tours_index)
 			worker.DbSQLAction.InsertToursFlush(&insert_tours, insert_tours_index, db_conn)
 			insert_tours_index = 0
 		}
@@ -97,6 +91,7 @@ func (worker *DbWorkerBase) UpdateProcessBy(thread_index int, batch_size int, qu
 	update_queue := fmt.Sprintf(queue_template, thread_index)
 	update_tours := make([]tours.TourInterface, batch_size)
 	update_tours_index := 0
+	log.Info.Println("UPDATE: Start loop", thread_index, "...")
 	for {
 		id_str, err := cache.GetQueue(update_queue)
 
@@ -134,12 +129,14 @@ func (worker *DbWorkerBase) UpdateProcessBy(thread_index int, batch_size int, qu
 			update_tours_index = 0
 		}
 	}
+	log.Info.Println("UPDATE: Finish loop", thread_index, ".")
 }
 
 func (worker *DbWorkerBase) DeleteProcessBy(thread_index int, batch_size int, queue_template string, thread_flag_key string, db_conn *db.DbConnection) {
 	delete_queue := fmt.Sprintf(queue_template, thread_index)
 	delete_tours := make([]string, batch_size)
 	delete_tours_index := 0
+	log.Info.Println("DELETE: Start loop", thread_index, "...")
 	for {
 		id_str, err := cache.GetQueue(delete_queue)
 
@@ -171,6 +168,7 @@ func (worker *DbWorkerBase) DeleteProcessBy(thread_index int, batch_size int, qu
 			delete_tours_index = 0
 		}
 	}
+	log.Info.Println("DELETE: Finish loop", thread_index, ".")
 }
 
 func (worker *DbWorkerBase) DbConnectionByThread(thread_index int) *db.DbConnection {

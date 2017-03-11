@@ -12,22 +12,32 @@ import (
 
 var (
 	worker *post_map_tours_price_logs.PostMapToursWorker
+	ManagerKeysCount = 0
 )
 
 // Sync prices with price logs
 
 func main() {
 	cache.InitFromEnv()
+	cache.RedisInit()
 	db.Init()
 
 	worker = &post_map_tours_price_logs.PostMapToursWorker{}
 
 	worker.Init()
+	worker.RunStatisticLoop()
 	worker.InitThreads()
 
 	ManagerLoop()
 
 	worker.WaitFinish()
+
+	log.Info.Println("Manager processed keys: ", ManagerKeysCount)
+	log.Info.Println("Workers processed keys: ", post_map_tours_price_logs.WorkerKeysProcessed)
+	log.Info.Println("Workers skiped keys: ", post_map_tours_price_logs.WorkerKeysSkip)
+	log.Info.Println("Workers updated keys: ", post_map_tours_price_logs.WorkerPricesUpdated)
+	log.Info.Println("Workers deleted keys: ", post_map_tours_price_logs.WorkerKeysDeleted)
+	log.Info.Println("Workers bad keys: ", post_map_tours_price_logs.WorkerKeysBad)
 }
 
 func ManagerLoop() {
@@ -43,6 +53,7 @@ func ManagerLoop() {
 			if err != nil {
 				log.Error.Print("Error parse ID from key ", id_key_str)
 			} else {
+				ManagerKeysCount++
 				worker.SendTour(id)
 			}
 		}
