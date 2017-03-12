@@ -33,10 +33,8 @@ func (worker *MapToursDbWorker) Init() {
 	worker.RedisTourReader = MapTourRedisReader{}
 
 	worker.DbPool = make([]db.DbConnection, worker.Settings.WorkerThreadsCount)
-	for i := 0; i < worker.Settings.WorkerThreadsCount; i++ {
-		worker.DbPool[i].Init(db.CurrentDbSettings)
-		worker.DbPool[i].CheckConnect()
-	}
+
+	worker.RunStatisticLoop()
 }
 
 func (worker *MapToursDbWorker) WaitFinish() {

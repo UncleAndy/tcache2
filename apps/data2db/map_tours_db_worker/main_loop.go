@@ -33,6 +33,9 @@ func (worker *MapToursDbWorker) InitThreads() {
 
 func (worker *MapToursDbWorker) Thread(thread_index int) {
 	log.Info.Println("Run map thread ", thread_index)
+	thread := thread_index - worker.Settings.WorkerFirstThreadId
+	worker.DbPool[thread].Init(db.CurrentDbSettings)
+	worker.DbPool[thread].CheckConnect()
 	for {
 		worker.InsertProcess(thread_index)
 		worker.UpdateProcess(thread_index)
@@ -109,6 +112,10 @@ func (i MapTourRedisReader) ReadTour(id_str string) (tours.TourInterface, error)
 }
 
 func (i MapTourDbSQLAction) InsertToursFlush(tours *[]tours.TourInterface, size int, db_conn *db.DbConnection) {
+	InToursCounterMutex.Lock()
+	InToursCounter += int64(len(*tours))
+	InToursCounterMutex.Unlock()
+
 	// Insert tours to DB
 	first_tour := (*tours)[0]
 	insert_fields_sql := first_tour.InsertSQLFieldsSet()
@@ -122,13 +129,20 @@ func (i MapTourDbSQLAction) InsertToursFlush(tours *[]tours.TourInterface, size 
 	sql := "INSERT INTO cached_sletat_tours ("+insert_fields_sql+") VALUES "+data_sql+";"
 
 	db_conn.CheckConnect()
-	_, err := db_conn.SendQuery(sql)
+	rows, err := db_conn.SendQuery(sql)
 	if err != nil {
 		log.Error.Print("WARNING! Error when insert new map tours to DB: ", err)
+	}
+	if rows != nil {
+		rows.Close()
 	}
 }
 
 func (i MapTourDbSQLAction) UpdateToursFlush(tours *[]tours.TourInterface, size int, db_conn *db.DbConnection) {
+	InToursCounterMutex.Lock()
+	InToursCounter += int64(len(*tours))
+	InToursCounterMutex.Unlock()
+
 	err := db_conn.StartTransaction()
 	if err != nil {
 		log.Error.Println("WARNING! Error update map tours start transaction: ", err)
@@ -151,12 +165,19 @@ func (i MapTourDbSQLAction) UpdateToursFlush(tours *[]tours.TourInterface, size 
 }
 
 func (i MapTourDbSQLAction) DeleteToursFlush(tours *[]string, size int, db_conn *db.DbConnection) {
+	InToursCounterMutex.Lock()
+	InToursCounter += int64(len(*tours))
+	InToursCounterMutex.Unlock()
+
 	actual := (*tours)[0:size]
 	ids := strings.Join(actual, ",")
 	sql := "DELETE FROM cached_sletat_tours WHERE id IN (" + ids + ")"
 	db_conn.CheckConnect()
-	_, err := db_conn.SendQuery(sql)
+	rows, err := db_conn.SendQuery(sql)
 	if err != nil {
 		log.Error.Print("WARNING! Error delete map tours from DB: ", err)
+	}
+	if rows != nil {
+		rows.Close()
 	}
 }

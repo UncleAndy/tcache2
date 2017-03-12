@@ -30,6 +30,9 @@ func (worker *PartnersToursDbWorker) InitThreads() {
 }
 
 func (worker *PartnersToursDbWorker) Thread(thread_index int) {
+	thread := thread_index - worker.Settings.WorkerFirstThreadId
+	worker.DbPool[thread].Init(db.CurrentDbSettings)
+	worker.DbPool[thread].CheckConnect()
 	for {
 		worker.InsertProcess(thread_index)
 		worker.UpdateProcess(thread_index)
@@ -120,9 +123,12 @@ func (i PartnersTourDbSQLAction) InsertToursFlush(tours *[]tours.TourInterface, 
 	sql := "INSERT INTO partners_tours ("+insert_fields_sql+") VALUES "+data_sql+";"
 
 	db_conn.CheckConnect()
-	_, err := db_conn.SendQuery(sql)
+	rows, err := db_conn.SendQuery(sql)
 	if err != nil {
 		log.Error.Print("WARNING! Error when insert new partners tours to DB: ", err)
+	}
+	if rows != nil {
+		rows.Close()
 	}
 }
 
@@ -153,8 +159,11 @@ func (i PartnersTourDbSQLAction) DeleteToursFlush(tours *[]string, size int, db_
 	ids := strings.Join(actual, ",")
 	sql := "DELETE FROM partners_tours WHERE id IN (" + ids + ")"
 	db_conn.CheckConnect()
-	_, err := db_conn.SendQuery(sql)
+	rows, err := db_conn.SendQuery(sql)
 	if err != nil {
 		log.Error.Print("WARNING! Error delete partners tours from DB: ", err)
+	}
+	if rows != nil {
+		rows.Close()
 	}
 }

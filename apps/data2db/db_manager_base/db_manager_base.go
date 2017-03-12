@@ -10,6 +10,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"os"
 	"io/ioutil"
+	"gopkg.in/redis.v4"
 )
 
 type ManagerBaseInterface interface {
@@ -130,7 +131,7 @@ func (worker *ManagerBase) ThreadsDeleteDataFinished() {
 }
 
 func (worker *ManagerBase) WaitThreadsFlushData() {
-	for true {
+	for {
 		if 	worker.ThreadsCounterFinished(worker.TourInsertThreadDataCounter) &&
 			worker.ThreadsCounterFinished(worker.TourUpdateThreadDataCounter) &&
 			worker.ThreadsCounterFinished(worker.TourDeleteThreadDataCounter) {
@@ -146,6 +147,9 @@ func (worker *ManagerBase) WaitThreadsFlushData() {
 
 func (worker *ManagerBase) ThreadsCounterFinished(counter_key string) bool {
 	counter_str, err := cache.Get(0, counter_key)
+	if err == redis.Nil {
+		return true
+	}
 	if err != nil {
 		log.Error.Print("Error read flush counter in manager:", err)
 	}

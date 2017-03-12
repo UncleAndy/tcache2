@@ -11,6 +11,11 @@ import (
 	"github.com/uncleandy/tcache2/db"
 )
 
+
+var (
+	ForceStopThreads = false
+)
+
 type DbWorkerBase struct {
 	Settings        worker_base.WorkerSettings
 	FinishChanel    chan bool
@@ -47,14 +52,17 @@ func (worker *DbWorkerBase) InsertProcessBy(thread_index int, batch_size int, qu
 
 		// Check finish loop
 		if err == redis.Nil {
-			_, err := cache.Get(0, thread_flag_key)
+			log.Info.Println("Insert queue ", insert_queue, " empty. Check finish flag: ", thread_flag_key, "...")
+			flag, err := cache.Get(0, thread_flag_key)
 			if err != redis.Nil {
+				log.Info.Println("Insert. Finish flag not null:", flag)
 				// Flush data if present
 				if insert_tours_index > 0 {
 					worker.DbSQLAction.InsertToursFlush(&insert_tours, insert_tours_index, db_conn)
 					insert_tours_index = 0
 				}
 
+				log.Info.Println("Insert. Finish flag increment.")
 				cache.Incr(0, thread_flag_key)
 				break
 			} else {
@@ -64,6 +72,8 @@ func (worker *DbWorkerBase) InsertProcessBy(thread_index int, batch_size int, qu
 		} else if err != nil {
 			log.Error.Print("WARNING! Error read insert queue for db:", err)
 			continue
+		} else {
+			//log.Info.Print("NOT NULL QUEUE ", insert_queue, " VALUE:", id_str)
 		}
 
 		tour, err := worker.RedisTourReader.ReadTour(id_str)

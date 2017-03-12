@@ -66,6 +66,7 @@ func Connect() *sql.DB {
 }
 
 func ConnectBy(settings *DbSettings) *sql.DB {
+	log.Info.Println("DB: CONNECT")
 	dbConnection := fmt.Sprintf(
 		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
 		settings.User,
@@ -81,9 +82,9 @@ func ConnectBy(settings *DbSettings) *sql.DB {
 	}
 
 	// Config connections.
-	db.SetConnMaxLifetime(0)
+	// db.SetConnMaxLifetime(0)
 	//db.SetMaxIdleConns(20)
-	db.SetMaxOpenConns(50)
+	// db.SetMaxOpenConns(500)
 
 	return db
 }
@@ -172,6 +173,7 @@ func CheckConnectBy(checked_db *sql.DB, db_settings *DbSettings) *sql.DB {
 
 		if err != nil {
 			log.Error.Println("DB ping error: ", err)
+			checked_db.Close()
 			return ConnectBy(db_settings)
 		}
 	}
@@ -180,7 +182,12 @@ func CheckConnectBy(checked_db *sql.DB, db_settings *DbSettings) *sql.DB {
 }
 
 func (conn *DbConnection) CheckConnect() {
+	oldDb := conn.Db
 	conn.Db = CheckConnectBy(conn.Db, conn.Settings)
+
+	if oldDb != nil && oldDb != conn.Db {
+		oldDb.Close()
+	}
 }
 
 func IsInListInt(list []int, id int) bool {
