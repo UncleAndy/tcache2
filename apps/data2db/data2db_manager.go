@@ -7,11 +7,35 @@ import (
 	"github.com/uncleandy/tcache2/apps/data2db/map_tours_db_manager"
 	"github.com/uncleandy/tcache2/apps/data2db/partners_tours_db_manager"
 	"github.com/uncleandy/tcache2/log"
+	"os"
+	"syscall"
+	"os/signal"
 )
+
+// TODO: Process statistics (speed)
 
 var (
 	Workers []db_manager_base.ManagerBaseInterface
 )
+
+func SignalsInit() (chan os.Signal) {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
+	return sigChan
+}
+
+
+func SignalsProcess(signals chan os.Signal) {
+	<- signals
+
+	log.Info.Println("Detect stop command. Please, wait...")
+
+	db_manager_base.ForceStopThreads = true
+}
 
 func InitWorkers() {
 	Workers = []db_manager_base.ManagerBaseInterface{
@@ -22,6 +46,9 @@ func InitWorkers() {
 
 func main() {
 	log.Info.Println("DB manager start...")
+	signals := SignalsInit()
+	go SignalsProcess(signals)
+
 	db.Init()
 	cache.InitFromEnv()
 	cache.RedisInit()

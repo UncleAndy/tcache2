@@ -11,6 +11,11 @@ import (
 	"os"
 	"io/ioutil"
 	"gopkg.in/redis.v4"
+	"sync"
+)
+
+var (
+	ForceStopThreads = false
 )
 
 type ManagerBaseInterface interface {
@@ -22,6 +27,14 @@ type ManagerBaseInterface interface {
 type ManagerBase struct {
 	Settings worker_base.WorkerSettings
 	FinishChanel chan bool
+
+	ManagerType string
+
+	StatCurrentProcess string
+	StatProcessedTours int64
+	StatLastCheckTime time.Time
+	StatLastProcessedTours int64
+	StatMutex *sync.Mutex
 
 	TourInsertQueue string
 	TourUpdateQueue string
@@ -36,7 +49,7 @@ type ManagerBase struct {
 }
 
 func (worker *ManagerBase) ManagerLoop() {
-	log.Info.Println("Start manager main loop...")
+	log.Info.Printf("Start manager %s main loop...\n", worker.ManagerType)
 	cache.Del(0, worker.TourInsertThreadDataCounter)
 	cache.Del(0, worker.TourUpdateThreadDataCounter)
 	cache.Del(0, worker.TourDeleteThreadDataCounter)
@@ -45,8 +58,9 @@ func (worker *ManagerBase) ManagerLoop() {
 	update_queue_length := cache.QueueSize(worker.TourUpdateQueue)
 	delete_queue_length := cache.QueueSize(worker.TourDeleteQueue)
 
-	if insert_queue_length > 0 {
-		log.Info.Println("Start manager INSERT loop...")
+	worker.StatCurrentProcess = "insert"
+	if insert_queue_length > 0 && !ForceStopThreads {
+		log.Info.Printf("Start manager %s INSERT loop...\n", worker.ManagerType)
 		for i := int64(0); i < insert_queue_length; i++ {
 			id_str, err := cache.GetQueue(worker.TourInsertQueue)
 			if err != nil {
@@ -54,13 +68,22 @@ func (worker *ManagerBase) ManagerLoop() {
 				continue
 			}
 			worker.SendTourInsert(id_str)
+
+			worker.StatMutex.Lock()
+			worker.StatProcessedTours++
+			worker.StatMutex.Unlock()
+
+			if  ForceStopThreads {
+				break
+			}
 		}
 		worker.ThreadsInsertDataFinished()
-		log.Info.Println("Finish manager INSERT loop.")
+		log.Info.Printf("Finish manager %s INSERT loop.\n", worker.ManagerType)
 	}
 
-	if update_queue_length > 0 {
-		log.Info.Println("Start manager UPDATE loop...")
+	worker.StatCurrentProcess = "update"
+	if update_queue_length > 0 && !ForceStopThreads {
+		log.Info.Printf("Start manager %s UPDATE loop...\n", worker.ManagerType)
 		for i := int64(0); i < update_queue_length; i++ {
 			id_str, err := cache.GetQueue(worker.TourUpdateQueue)
 			if err != nil {
@@ -68,13 +91,22 @@ func (worker *ManagerBase) ManagerLoop() {
 				continue
 			}
 			worker.SendTourUpdate(id_str)
+
+			worker.StatMutex.Lock()
+			worker.StatProcessedTours++
+			worker.StatMutex.Unlock()
+
+			if  ForceStopThreads {
+				break
+			}
 		}
 		worker.ThreadsUpdateDataFinished()
-		log.Info.Println("Finish manager UPDATE loop.")
+		log.Info.Printf("Finish manager %s UPDATE loop.\n", worker.ManagerType)
 	}
 
-	if delete_queue_length > 0 {
-		log.Info.Println("Start manager DELETE loop...")
+	worker.StatCurrentProcess = "delete"
+	if delete_queue_length > 0 && !ForceStopThreads {
+		log.Info.Printf("Start manager %s DELETE loop...\n", worker.ManagerType)
 		for i := int64(0); i < delete_queue_length; i++ {
 			id_str, err := cache.GetQueue(worker.TourDeleteQueue)
 			if err != nil {
@@ -82,17 +114,29 @@ func (worker *ManagerBase) ManagerLoop() {
 				continue
 			}
 			worker.SendTourDelete(id_str)
+
+			worker.StatMutex.Lock()
+			worker.StatProcessedTours++
+			worker.StatMutex.Unlock()
+
+			if  ForceStopThreads {
+				break
+			}
 		}
 		worker.ThreadsDeleteDataFinished()
-		log.Info.Println("Finish manager DELETE loop.")
+		log.Info.Printf("Finish manager %s DELETE loop.\n", worker.ManagerType)
 	}
 
-	if insert_queue_length > 0 || update_queue_length > 0 || delete_queue_length > 0 {
-		log.Info.Println("Wait finish db workers processes...")
+	if !ForceStopThreads &&
+	   (insert_queue_length > 0 || update_queue_length > 0 || delete_queue_length > 0) {
+		worker.StatCurrentProcess = "finish wait"
+		log.Info.Printf("Wait finish db workers processes for %s...\n", worker.ManagerType)
 		worker.WaitThreadsFlushData()
-		log.Info.Println("DB workers processes finished.")
+		log.Info.Printf("DB workers processes finished for %s.\n", worker.ManagerType)
 	}
 	worker.FinishChanel <- true
+
+	log.Info.Printf("Finish manager %s main loop.\n", worker.ManagerType)
 }
 
 func (worker *ManagerBase) SendTourInsert(id_str string) {

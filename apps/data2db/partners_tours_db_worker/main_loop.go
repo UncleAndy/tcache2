@@ -10,6 +10,7 @@ import (
 	"strings"
 	"github.com/uncleandy/tcache2/apps/workers/partners_tours"
 	"github.com/uncleandy/tcache2/apps/data2db/db_worker_base"
+	"sync"
 )
 
 const (
@@ -23,21 +24,31 @@ func (worker *PartnersToursDbWorker) MainLoop() {
 }
 
 func (worker *PartnersToursDbWorker) InitThreads() {
+	wg := sync.WaitGroup{}
+	wg.Add(worker.Settings.WorkerThreadsCount)
 	for i := 0; i < worker.Settings.WorkerThreadsCount; i++ {
 		thread := worker.Settings.WorkerFirstThreadId + i
-		go worker.Thread(thread)
+		go func() {
+			worker.Thread(thread)
+			wg.Done()
+		}()
 	}
+
+	wg.Wait()
+	worker.FinishChanel <- true
 }
 
 func (worker *PartnersToursDbWorker) Thread(thread_index int) {
+	log.Info.Println("Run partners thread ", thread_index, "...")
 	thread := thread_index - worker.Settings.WorkerFirstThreadId
 	worker.DbPool[thread].Init(db.CurrentDbSettings)
 	worker.DbPool[thread].CheckConnect()
-	for {
+	for !db_worker_base.ForceStopThreads {
 		worker.InsertProcess(thread_index)
 		worker.UpdateProcess(thread_index)
 		worker.DeleteProcess(thread_index)
 	}
+	log.Info.Println("Stop partners thread ", thread_index)
 }
 
 // TODO: Tests process like map tours

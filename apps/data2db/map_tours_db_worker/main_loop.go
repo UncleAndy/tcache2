@@ -10,6 +10,7 @@ import (
 	"github.com/uncleandy/tcache2/db"
 	"strings"
 	"github.com/uncleandy/tcache2/apps/data2db/db_worker_base"
+	"sync"
 )
 
 const (
@@ -25,22 +26,31 @@ func (worker *MapToursDbWorker) MainLoop() {
 }
 
 func (worker *MapToursDbWorker) InitThreads() {
+	wg := sync.WaitGroup{}
+	wg.Add(worker.Settings.WorkerThreadsCount)
 	for i := 0; i < worker.Settings.WorkerThreadsCount; i++ {
 		thread := worker.Settings.WorkerFirstThreadId + i
-		go worker.Thread(thread)
+		go func() {
+			worker.Thread(thread)
+			wg.Done()
+		}()
 	}
+
+	wg.Wait()
+	worker.FinishChanel <- true
 }
 
 func (worker *MapToursDbWorker) Thread(thread_index int) {
-	log.Info.Println("Run map thread ", thread_index)
+	log.Info.Println("Run map thread ", thread_index, "...")
 	thread := thread_index - worker.Settings.WorkerFirstThreadId
 	worker.DbPool[thread].Init(db.CurrentDbSettings)
 	worker.DbPool[thread].CheckConnect()
-	for {
+	for !db_worker_base.ForceStopThreads {
 		worker.InsertProcess(thread_index)
 		worker.UpdateProcess(thread_index)
 		worker.DeleteProcess(thread_index)
 	}
+	log.Info.Println("Stop map thread ", thread_index)
 }
 
 func (worker *MapToursDbWorker) InsertProcess(thread_index int) {

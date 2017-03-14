@@ -3,6 +3,7 @@ package partners_tours_db_manager
 import (
 	"github.com/uncleandy/tcache2/apps/data2db/partners_tours_db_worker"
 	"github.com/uncleandy/tcache2/apps/workers/partners_tours"
+	"sync"
 )
 
 const (
@@ -10,8 +11,10 @@ const (
 )
 
 func (worker *PartnersToursDbManager) Init() {
+	worker.ManagerType = "partners"
 	worker.LoadWorkerConfig(EnvWorkerFileConfig)
 	worker.FinishChanel = make(chan bool)
+	worker.StatMutex = &sync.Mutex{}
 
 	worker.TourInsertQueue = partners_tours.PartnersTourInsertQueue
 	worker.TourUpdateQueue = partners_tours.PartnersTourUpdateQueue
@@ -22,4 +25,6 @@ func (worker *PartnersToursDbManager) Init() {
 	worker.TourInsertThreadDataCounter = partners_tours_db_worker.PartnersTourInsertThreadDataCounter
 	worker.TourUpdateThreadDataCounter = partners_tours_db_worker.PartnersTourUpdateThreadDataCounter
 	worker.TourDeleteThreadDataCounter = partners_tours_db_worker.PartnersTourDeleteThreadDataCounter
+
+	worker.RunStatisticLoop()
 }

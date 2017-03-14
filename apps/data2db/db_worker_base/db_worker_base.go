@@ -48,13 +48,17 @@ func (worker *DbWorkerBase) InsertProcessBy(thread_index int, batch_size int, qu
 	insert_tours := make([]tours.TourInterface, batch_size)
 	insert_tours_index := 0
 	for {
-		id_str, err := cache.GetQueue(insert_queue)
+		var id_str string
+		var err error
+		if !ForceStopThreads {
+			id_str, err = cache.GetQueue(insert_queue)
+		}
 
 		// Check finish loop
-		if err == redis.Nil {
+		if err == redis.Nil || ForceStopThreads {
 			log.Info.Println("Insert queue ", insert_queue, " empty. Check finish flag: ", thread_flag_key, "...")
 			flag, err := cache.Get(0, thread_flag_key)
-			if err != redis.Nil {
+			if err != redis.Nil || ForceStopThreads {
 				log.Info.Println("Insert. Finish flag not null:", flag)
 				// Flush data if present
 				if insert_tours_index > 0 {
@@ -96,12 +100,16 @@ func (worker *DbWorkerBase) UpdateProcessBy(thread_index int, batch_size int, qu
 	update_tours := make([]tours.TourInterface, batch_size)
 	update_tours_index := 0
 	for {
-		id_str, err := cache.GetQueue(update_queue)
+		var id_str string
+		var err error
+		if !ForceStopThreads {
+			id_str, err = cache.GetQueue(update_queue)
+		}
 
 		// Check finish loop
-		if err == redis.Nil {
+		if err == redis.Nil || ForceStopThreads {
 			_, err := cache.Get(0, thread_flag_key)
-			if err != redis.Nil {
+			if err != redis.Nil || ForceStopThreads {
 				// Flush data if present
 				if update_tours_index > 0 {
 					worker.DbSQLAction.UpdateToursFlush(&update_tours, update_tours_index, db_conn)
@@ -139,12 +147,16 @@ func (worker *DbWorkerBase) DeleteProcessBy(thread_index int, batch_size int, qu
 	delete_tours := make([]string, batch_size)
 	delete_tours_index := 0
 	for {
-		id_str, err := cache.GetQueue(delete_queue)
+		var id_str string
+		var err error
+		if !ForceStopThreads {
+			id_str, err = cache.GetQueue(delete_queue)
+		}
 
 		// Check finish loop
-		if err == redis.Nil {
+		if err == redis.Nil || ForceStopThreads {
 			_, err := cache.Get(0, thread_flag_key)
-			if err != redis.Nil {
+			if err != redis.Nil || ForceStopThreads {
 				// Flush data if present
 				if delete_tours_index > 0 {
 					worker.DbSQLAction.DeleteToursFlush(&delete_tours, delete_tours_index, db_conn)

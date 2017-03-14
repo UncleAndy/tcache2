@@ -3,6 +3,7 @@ package map_tours_db_manager
 import (
 	"github.com/uncleandy/tcache2/apps/data2db/map_tours_db_worker"
 	"github.com/uncleandy/tcache2/apps/workers/map_tours"
+	"sync"
 )
 
 const (
@@ -10,8 +11,10 @@ const (
 )
 
 func (worker *MapToursDbManager) Init() {
+	worker.ManagerType = "map"
 	worker.LoadWorkerConfig(EnvWorkerFileConfig)
 	worker.FinishChanel = make(chan bool)
+	worker.StatMutex = &sync.Mutex{}
 
 	worker.TourInsertQueue = map_tours.MapTourInsertQueue
 	worker.TourUpdateQueue = map_tours.MapTourUpdateQueue
@@ -22,4 +25,6 @@ func (worker *MapToursDbManager) Init() {
 	worker.TourInsertThreadDataCounter = map_tours_db_worker.MapTourInsertThreadDataCounter
 	worker.TourUpdateThreadDataCounter = map_tours_db_worker.MapTourUpdateThreadDataCounter
 	worker.TourDeleteThreadDataCounter = map_tours_db_worker.MapTourDeleteThreadDataCounter
+
+	worker.RunStatisticLoop()
 }
