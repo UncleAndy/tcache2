@@ -8,6 +8,12 @@ import (
 	"github.com/uncleandy/tcache2/apps/postprocessor/post_partners_tours"
 	"github.com/uncleandy/tcache2/log"
 	"github.com/uncleandy/tcache2/apps/workers/partners_tours"
+	"os"
+	"github.com/uncleandy/tcache2/apps_libs"
+)
+
+const (
+	PidFileName = "/var/tmp/tcache2_post_partners_tours_clean.pid"
 )
 
 var (
@@ -18,6 +24,9 @@ var (
 // Sync prices with price logs
 
 func main() {
+	apps_libs.PidProcess(PidFileName)
+	defer os.Remove(PidFileName)
+
 	cache.InitFromEnv()
 	cache.RedisInit()
 	db.Init()

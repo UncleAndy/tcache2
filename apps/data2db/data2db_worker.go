@@ -10,9 +10,14 @@ import (
 	"syscall"
 	"os/signal"
 	"github.com/uncleandy/tcache2/log"
+	"github.com/uncleandy/tcache2/apps_libs"
 )
 
 // TODO: Profile DB operations
+
+const (
+	PidFileName = "/var/tmp/tcache2_data2db_worker.pid"
+)
 
 var (
 	Workers []db_worker_base.DbWorkerBaseInterface
@@ -45,6 +50,9 @@ func InitDbWorkers() {
 }
 
 func main() {
+	apps_libs.PidProcess(PidFileName)
+	defer os.Remove(PidFileName)
+
 	signals := SignalsInit()
 	go SignalsProcess(signals)
 

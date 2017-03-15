@@ -10,6 +10,11 @@ import (
 	"syscall"
 	"os/signal"
 	"github.com/uncleandy/tcache2/log"
+	"github.com/uncleandy/tcache2/apps_libs"
+)
+
+const (
+	PidFileName = "/var/tmp/tcache2_worker.pid"
 )
 
 func InitWorkers() {
@@ -18,6 +23,7 @@ func InitWorkers() {
 		&partners_tours.PartnersToursWorker{},
 	}
 }
+
 func SignalsWorkerInit() (chan os.Signal) {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan,
@@ -40,6 +46,9 @@ func SignalsWorkerProcess(signals chan os.Signal) {
 }
 
 func main() {
+	apps_libs.PidProcess(PidFileName)
+	defer os.Remove(PidFileName)
+
 	signals := SignalsWorkerInit()
 	go SignalsWorkerProcess(signals)
 

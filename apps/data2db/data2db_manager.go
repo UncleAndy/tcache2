@@ -10,9 +10,14 @@ import (
 	"os"
 	"syscall"
 	"os/signal"
+	"github.com/uncleandy/tcache2/apps_libs"
 )
 
 // TODO: Process statistics (speed)
+
+const (
+	PidFileName = "/var/tmp/tcache2_data2db_manager.pid"
+)
 
 var (
 	Workers []db_manager_base.ManagerBaseInterface
@@ -27,7 +32,6 @@ func SignalsInit() (chan os.Signal) {
 		syscall.SIGQUIT)
 	return sigChan
 }
-
 
 func SignalsProcess(signals chan os.Signal) {
 	<- signals
@@ -45,6 +49,9 @@ func InitWorkers() {
 }
 
 func main() {
+	apps_libs.PidProcess(PidFileName)
+	defer os.Remove(PidFileName)
+
 	log.Info.Println("DB manager start...")
 	signals := SignalsInit()
 	go SignalsProcess(signals)

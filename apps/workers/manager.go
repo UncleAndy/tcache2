@@ -15,10 +15,12 @@ import (
 	"sync"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"github.com/uncleandy/tcache2/apps_libs"
 )
 
 const (
 	EnvManagerFileConfig = "WORKERS_MANAGER_CONFIG"
+	PidFileName = "/var/tmp/tcache2_worker_manager.pid"
 )
 
 var (
@@ -61,6 +63,9 @@ func SignalsProcess(signals chan os.Signal) {
 }
 
 func main() {
+	apps_libs.PidProcess(PidFileName)
+	defer os.Remove(PidFileName)
+
 	signals := SignalsInit()
 	go SignalsProcess(signals)
 

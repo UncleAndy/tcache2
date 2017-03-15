@@ -7,6 +7,11 @@ import (
 	"syscall"
 	"os/signal"
 	"github.com/uncleandy/tcache2/log"
+	"github.com/uncleandy/tcache2/apps_libs"
+)
+
+const (
+	PidFileName = "/var/tmp/tcache2_sletat_loader.pid"
 )
 
 func SignalsInit() (chan os.Signal) {
@@ -28,6 +33,9 @@ func SignalsProcess(signals chan os.Signal) {
 }
 
 func main() {
+	apps_libs.PidProcess(PidFileName)
+	defer os.Remove(PidFileName)
+
 	signals := SignalsInit()
 	go SignalsProcess(signals)
 
